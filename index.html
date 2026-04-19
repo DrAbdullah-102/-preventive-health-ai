@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Health AI Companion</title>
+</head>
+<body>
+
+<h2>Health AI Chatbot</h2>
+
+<input type="text" id="symptoms" placeholder="Enter your symptoms" />
+<button onclick="analyze()">Analyze</button>
+
+<p id="result"></p>
+
+<script>
+function analyze() {
+    let input = document.getElementById("symptoms").value.toLowerCase();
+    let result = "";
+
+    if (input.includes("fever") && input.includes("cough")) {
+        result = "Possible: Flu. Advice: Rest and drink fluids.";
+    } 
+    else if (input.includes("headache")) {
+        result = "Possible: Migraine. Advice: Rest in dark room.";
+    } 
+    else if (input.includes("stomach")) {
+        result = "Possible: Gastritis. Advice: Avoid heavy food.";
+    } 
+    else {
+        result = "Not enough data. Please consult a doctor.";
+    }
+
+    document.getElementById("result").innerText = result;
+}
+</script>
+
+</body>
+</html>
