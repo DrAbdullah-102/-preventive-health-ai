@@ -1,0 +1,5020 @@
+
+
+================================================================================
+FILE: wiqaya-fullstack/.env.example
+================================================================================
+
+# ============================================================
+# WIQAYA - Environment Variables
+# Copy this file to .env.local and fill in your values
+# NEVER commit .env.local to git
+# ============================================================
+
+# Supabase
+# Get from: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/api
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Claude API
+# Get from: https://console.anthropic.com
+# NEVER prefix with NEXT_PUBLIC_ — server-only
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/.gitignore
+================================================================================
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files - NEVER commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/ARCHITECTURE.md
+================================================================================
+
+# Wiqaya Full Stack Architecture
+
+wiqaya/
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx                    # Landing / redirect
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   └── (app)/
+│       ├── layout.tsx              # Protected layout with nav
+│       ├── assessment/page.tsx     # Main health form (existing logic)
+│       ├── dashboard/page.tsx      # Dashboard + charts
+│       ├── history/page.tsx        # Past reports
+│       └── lab/page.tsx            # Upload + AI lab analysis
+├── components/
+│   ├── ui/
+│   │   ├── Toast.tsx
+│   │   ├── Spinner.tsx
+│   │   └── EmptyState.tsx
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   └── SignupForm.tsx
+│   ├── assessment/
+│   │   └── WiqayaAssessment.tsx    # Your existing component (refactored)
+│   ├── dashboard/
+│   │   ├── RiskChart.tsx
+│   │   └── StatsCards.tsx
+│   └── lab/
+│       └── LabUploader.tsx
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts               # Browser client
+│   │   ├── server.ts               # Server client
+│   │   └── middleware.ts
+│   ├── claude.ts                   # Claude API helper (server-only)
+│   └── risk-engine.ts              # Risk calculation logic
+├── app/api/
+│   ├── analyze-health/route.ts     # Claude health analysis
+│   └── analyze-lab/route.ts        # Claude lab PDF analysis
+├── hooks/
+│   ├── useAuth.ts
+│   ├── useReports.ts
+│   └── useToast.ts
+├── types/
+│   └── index.ts
+├── middleware.ts                   # Route protection
+└── .env.local
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/README.md
+================================================================================
+
+# 🛡 وِقاية — Wiqaya Preventive Health Platform
+
+**AI-powered preventive healthcare app** built with Next.js 15, Supabase, and Claude AI.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15 (App Router) + TypeScript |
+| Auth & DB | Supabase (Auth + PostgreSQL + Storage) |
+| AI | Claude Sonnet (Anthropic API) |
+| Deployment | Vercel |
+
+---
+
+## Project Structure
+
+```
+wiqaya/
+├── app/
+│   ├── layout.tsx                  # Root layout
+│   ├── page.tsx                    # Root redirect
+│   ├── (auth)/
+│   │   ├── login/page.tsx          # Login page
+│   │   └── signup/page.tsx         # Signup page
+│   ├── (app)/
+│   │   ├── layout.tsx              # Protected layout + sidebar nav
+│   │   ├── dashboard/page.tsx      # Dashboard + charts
+│   │   ├── assessment/page.tsx     # Health assessment form
+│   │   ├── lab/page.tsx            # Lab file upload + AI analysis
+│   │   └── history/page.tsx        # Past reports history
+│   └── api/
+│       ├── analyze-health/route.ts # Claude health analysis (server)
+│       └── analyze-lab/route.ts    # Claude lab analysis (server)
+├── components/
+│   └── ui/
+│       └── Toast.tsx
+├── hooks/
+│   ├── useAuth.ts
+│   └── useToast.ts
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts               # Browser Supabase client
+│   │   └── server.ts               # Server Supabase client
+│   ├── claude.ts                   # Claude API helper (server-only)
+│   └── risk-engine.ts              # Pure risk calculation logic
+├── types/index.ts                  # All TypeScript types
+├── middleware.ts                   # Route protection
+├── supabase/schema.sql             # Full DB schema
+└── .env.example                    # Environment template
+```
+
+---
+
+## Setup — Step by Step
+
+### 1. Clone and Install
+
+```bash
+git clone https://github.com/your-username/wiqaya.git
+cd wiqaya
+npm install
+```
+
+---
+
+### 2. Supabase Setup
+
+1. Go to [supabase.com](https://supabase.com) → New Project
+2. Choose a name (e.g. `wiqaya`) and a strong database password
+3. Wait for project to be ready (~1 min)
+
+**Run the Database Schema:**
+
+1. In Supabase Dashboard → **SQL Editor**
+2. Copy the entire content of `supabase/schema.sql`
+3. Paste and click **Run**
+
+This creates:
+- `profiles` table (auto-created on signup via trigger)
+- `health_reports` table
+- `lab_reports` table
+- Row Level Security (RLS) policies
+- Storage bucket `lab-files`
+
+---
+
+### 3. Environment Variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+```env
+# From Supabase Dashboard → Settings → API
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+
+# From Supabase Dashboard → Settings → API → Service Role (keep secret)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
+
+# From https://console.anthropic.com → API Keys
+ANTHROPIC_API_KEY=sk-ant-api03-...
+
+# Your app URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+> ⚠️ **NEVER** prefix `ANTHROPIC_API_KEY` with `NEXT_PUBLIC_` — it would expose it to the browser.
+
+---
+
+### 4. Supabase Auth Configuration
+
+In Supabase Dashboard → **Authentication → Settings**:
+
+- **Site URL**: `http://localhost:3000` (change to your domain in production)
+- **Redirect URLs**: `http://localhost:3000/**`
+- Email confirmations: You can **disable** for development (Auth → Settings → "Confirm email" toggle OFF)
+
+---
+
+### 5. Run Locally
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+The app will redirect you to `/login` automatically.
+
+---
+
+### 6. Verify Everything Works
+
+Test this flow in order:
+
+1. **Signup** → Create account at `/signup`
+2. **Assessment** → Complete health form at `/assessment`
+3. **Report** → Should show risk score + AI insight (Claude API)
+4. **Dashboard** → `/dashboard` shows stats and chart
+5. **Lab Upload** → Upload any PDF or image at `/lab`
+6. **History** → `/history` shows all past reports
+
+---
+
+## Deploying to Vercel
+
+```bash
+npm install -g vercel
+vercel
+```
+
+Set all environment variables in Vercel Dashboard → Project → Settings → Environment Variables.
+
+Update in Supabase:
+- **Site URL** → your Vercel domain (e.g. `https://wiqaya.vercel.app`)
+- **Redirect URLs** → `https://wiqaya.vercel.app/**`
+
+---
+
+## Security Architecture
+
+```
+Browser  ──[form data]──►  /api/analyze-health  ──[ANTHROPIC_API_KEY]──►  Claude API
+                                    │
+                                    ▼
+                              Supabase DB
+                          (RLS: user sees own data only)
+```
+
+- `ANTHROPIC_API_KEY` lives **only** on the server — never exposed to browser
+- All DB operations protected by **Row Level Security** — users see only their own data
+- File uploads stored under `user_id/filename` path — access controlled by storage policies
+- Session management handled by Supabase Auth + middleware
+
+---
+
+## Features
+
+| Feature | Status |
+|---------|--------|
+| Email/Password Auth | ✅ |
+| Protected Routes (middleware) | ✅ |
+| Health Risk Assessment | ✅ |
+| AI Health Analysis (Claude) | ✅ |
+| Save Reports to DB | ✅ |
+| Lab File Upload (PDF/Image) | ✅ |
+| AI Lab Analysis (Claude Vision) | ✅ |
+| Dashboard + Risk Chart | ✅ |
+| Reports History + Delete | ✅ |
+| Toast Notifications | ✅ |
+| Mobile Responsive | ✅ |
+| RTL Arabic UI | ✅ |
+| Row Level Security | ✅ |
+
+---
+
+## CV Description (English)
+
+> **Wiqaya — AI Preventive Health Platform** | Next.js · Supabase · Claude AI
+>
+> Full-stack preventive healthcare web app that analyzes personal health data and lab reports using AI. Features include user authentication, encrypted data storage with Row Level Security, PDF/image lab report analysis via Claude Vision API, risk scoring engine, interactive dashboard with historical tracking, and mobile-first RTL Arabic UI. Built with Next.js 15 App Router, Supabase, and Anthropic Claude Sonnet.
+
+---
+
+## المؤسس
+
+**عبدالله** — طالب طب أردني، جامعة المنصورة، السنة الثالثة
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/middleware.ts
+================================================================================
+
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+
+  // Protected routes
+  const protectedPaths = ['/dashboard', '/assessment', '/history', '/lab']
+  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
+
+  // Auth routes
+  const authPaths = ['/login', '/signup']
+  const isAuthPage = authPaths.some(p => pathname.startsWith(p))
+
+  if (isProtected && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (isAuthPage && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/next.config.js
+================================================================================
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+}
+
+module.exports = nextConfig
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/package.json
+================================================================================
+
+{
+  "name": "wiqaya",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "15.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/postcss.config.js
+================================================================================
+
+module.exports = {
+  plugins: {
+    autoprefixer: {},
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/tsconfig.json
+================================================================================
+
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/types/index.ts
+================================================================================
+
+export type Gender = 'male' | 'female'
+export type RiskLevel = 'منخفض' | 'متوسط' | 'مرتفع'
+export type LabStatus = 'pending' | 'processing' | 'done' | 'error'
+export type FamilyDegree = 'first' | 'second'
+export type UrgencyLevel = 'عاجل' | 'مهم' | 'روتيني'
+export type ScreeningCategory = 'blood' | 'imaging' | 'cardiology' | 'cancer' | 'lifestyle' | 'general' | 'hormones' | 'vitamins'
+
+export type RelativeType =
+  | 'father' | 'mother' | 'brother' | 'sister'
+  | 'son' | 'daughter' | 'grandfather_p' | 'grandmother_p'
+  | 'grandfather_m' | 'grandmother_m' | 'uncle' | 'aunt'
+  | 'cousin' | 'other'
+
+export type FamilyDisease =
+  | 'diabetes' | 'hypertension' | 'heart_disease' | 'stroke'
+  | 'colon_cancer' | 'breast_cancer' | 'lung_cancer' | 'kidney_disease'
+  | 'asthma' | 'obesity' | 'autoimmune' | 'thyroid' | 'mental_health' | 'other'
+
+export interface FamilyMember {
+  id: string
+  relative: RelativeType | ''
+  disease: FamilyDisease | ''
+  age_at_diagnosis: string
+  notes: string
+  is_alive: boolean | null
+  is_smoker: boolean | null
+  degree: FamilyDegree
+}
+
+export interface Screening {
+  name: string
+  nameEn: string
+  freq: string
+  urgency: UrgencyLevel
+  category: ScreeningCategory
+  guidelineSource: string
+  explanation: string
+  intervalReason: string
+  triggerReasons: string[]
+}
+
+export interface HealthFormData {
+  age: string
+  gender: Gender | ''
+  height: string
+  weight: string
+  familyMembers: FamilyMember[]
+  noFamilyHistory: boolean
+  habits: {
+    smoking: string
+    exercise: string
+    sleep: string
+    diet: string
+    stress: string
+    alcohol: string
+    waterIntake: string
+  }
+  waistCircumference?: string
+}
+
+export interface RiskBreakdown {
+  category: string
+  score: number
+  maxScore: number
+  details: string
+}
+
+export interface HealthReport {
+  id: string
+  user_id: string
+  age: number
+  gender: Gender
+  height: number
+  weight: number
+  bmi: number
+  risk_score: number
+  risk_level: RiskLevel
+  family_members: FamilyMember[]
+  no_family_history: boolean
+  habits: Record<string, string>
+  screenings: Screening[]
+  lifestyle_tips: string[]
+  positives: string[]
+  risk_breakdown: RiskBreakdown[]
+  ai_insight: string | null
+  created_at: string
+}
+
+export interface LabReport {
+  id: string
+  user_id: string
+  file_name: string
+  file_url: string
+  file_type: string
+  file_size: number | null
+  extracted_text: string | null
+  ai_analysis: string | null
+  status: LabStatus
+  has_abnormal_values: boolean
+  urgent_flag: boolean
+  summary: string | null
+  created_at: string
+}
+
+export interface Profile {
+  id: string
+  email: string
+  full_name: string | null
+  created_at: string
+}
+
+export interface TrendPoint {
+  date: string
+  value: number
+  label?: string
+}
+
+export interface Toast {
+  id: string
+  message: string
+  type: 'success' | 'error' | 'info'
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/ui/EmptyState.tsx
+================================================================================
+
+'use client'
+import Link from 'next/link'
+
+interface EmptyStateProps {
+  icon?: string
+  title: string
+  description?: string
+  actionLabel?: string
+  actionHref?: string
+  onAction?: () => void
+}
+
+export function EmptyState({
+  icon = '📂',
+  title,
+  description,
+  actionLabel,
+  actionHref,
+  onAction,
+}: EmptyStateProps) {
+  return (
+    <div style={{
+      textAlign: 'center',
+      padding: '60px 24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 12,
+    }}>
+      <div style={{ fontSize: 52 }}>{icon}</div>
+      <h3 style={{
+        color: 'white', fontSize: 18, fontWeight: 700,
+        letterSpacing: '-0.3px', margin: 0,
+      }}>{title}</h3>
+      {description && (
+        <p style={{ color: '#555', fontSize: 13, lineHeight: 1.7, maxWidth: 280, margin: 0 }}>
+          {description}
+        </p>
+      )}
+      {actionLabel && actionHref && (
+        <Link href={actionHref} style={{
+          marginTop: 8,
+          background: 'linear-gradient(135deg, #059669, #34d399)',
+          color: '#001a0e', padding: '12px 24px', borderRadius: 12,
+          fontWeight: 700, fontSize: 14, textDecoration: 'none',
+        }}>
+          {actionLabel}
+        </Link>
+      )}
+      {actionLabel && onAction && !actionHref && (
+        <button onClick={onAction} style={{
+          marginTop: 8,
+          background: 'linear-gradient(135deg, #059669, #34d399)',
+          color: '#001a0e', padding: '12px 24px', borderRadius: 12,
+          fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/ui/Spinner.tsx
+================================================================================
+
+'use client'
+
+interface SpinnerProps {
+  size?: number
+  color?: string
+}
+
+export function Spinner({ size = 24, color = '#34d399' }: SpinnerProps) {
+  return (
+    <div style={{
+      display: 'inline-block',
+      width: size,
+      height: size,
+      border: `${size < 20 ? 2 : 3}px solid ${color}22`,
+      borderTopColor: color,
+      borderRadius: '50%',
+      animation: 'spin 0.7s linear infinite',
+      flexShrink: 0,
+    }} />
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/ui/Toast.tsx
+================================================================================
+
+'use client'
+import type { Toast } from '@/types'
+
+interface ToastContainerProps {
+  toasts: Toast[]
+  onRemove: (id: string) => void
+}
+
+export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
+  if (toasts.length === 0) return null
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 24,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+      alignItems: 'center',
+    }}>
+      {toasts.map(toast => (
+        <div
+          key={toast.id}
+          onClick={() => onRemove(toast.id)}
+          style={{
+            padding: '12px 20px',
+            borderRadius: 12,
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 500,
+            maxWidth: 320,
+            textAlign: 'center',
+            animation: 'fadeUp 0.3s ease',
+            background:
+              toast.type === 'success' ? '#052e16' :
+              toast.type === 'error' ? '#2d0a0a' : '#111118',
+            color:
+              toast.type === 'success' ? '#34d399' :
+              toast.type === 'error' ? '#f87171' : '#ccc',
+            border: `1px solid ${
+              toast.type === 'success' ? '#34d39944' :
+              toast.type === 'error' ? '#f8717144' : '#2a2a3a'
+            }`,
+          }}
+        >
+          {toast.type === 'success' ? '✓ ' : toast.type === 'error' ? '✕ ' : 'ℹ '}
+          {toast.message}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/family/FamilyHistoryBuilder.tsx
+================================================================================
+
+'use client'
+import { useState } from 'react'
+import type { FamilyMember, RelativeType, FamilyDisease } from '@/types'
+import { getFamilyDegree } from '@/lib/risk-engine'
+
+const RELATIVES: { id: RelativeType; label: string }[] = [
+  { id: 'father', label: 'الأب' },
+  { id: 'mother', label: 'الأم' },
+  { id: 'brother', label: 'أخ' },
+  { id: 'sister', label: 'أخت' },
+  { id: 'son', label: 'ابن' },
+  { id: 'daughter', label: 'بنت' },
+  { id: 'grandfather_p', label: 'جد (أبوي)' },
+  { id: 'grandmother_p', label: 'جدة (أبوية)' },
+  { id: 'grandfather_m', label: 'جد (أمي)' },
+  { id: 'grandmother_m', label: 'جدة (أمية)' },
+  { id: 'uncle', label: 'عم / خال' },
+  { id: 'aunt', label: 'عمة / خالة' },
+  { id: 'cousin', label: 'ابن عم / خال' },
+  { id: 'other', label: 'أخرى' },
+]
+
+const DISEASES: { id: FamilyDisease; label: string; icon: string }[] = [
+  { id: 'diabetes', label: 'السكري', icon: '🩸' },
+  { id: 'hypertension', label: 'ضغط الدم', icon: '💉' },
+  { id: 'heart_disease', label: 'أمراض القلب', icon: '❤️' },
+  { id: 'stroke', label: 'السكتة الدماغية', icon: '🧠' },
+  { id: 'colon_cancer', label: 'سرطان القولون', icon: '🎗️' },
+  { id: 'breast_cancer', label: 'سرطان الثدي', icon: '🎗️' },
+  { id: 'lung_cancer', label: 'سرطان الرئة', icon: '🫁' },
+  { id: 'kidney_disease', label: 'أمراض الكلى', icon: '🫘' },
+  { id: 'asthma', label: 'الربو', icon: '💨' },
+  { id: 'obesity', label: 'السمنة المفرطة', icon: '⚖️' },
+  { id: 'autoimmune', label: 'أمراض المناعة الذاتية', icon: '🛡' },
+  { id: 'thyroid', label: 'أمراض الغدة الدرقية', icon: '🦋' },
+  { id: 'mental_health', label: 'الأمراض النفسية', icon: '🧩' },
+  { id: 'other', label: 'أخرى', icon: '📋' },
+]
+
+interface Props {
+  members: FamilyMember[]
+  noFamilyHistory: boolean
+  onChange: (members: FamilyMember[], noHistory: boolean) => void
+}
+
+function generateId() {
+  return Math.random().toString(36).slice(2, 9)
+}
+
+function emptyMember(): FamilyMember {
+  return {
+    id: generateId(),
+    relative: '',
+    disease: '',
+    age_at_diagnosis: '',
+    notes: '',
+    is_alive: null,
+    is_smoker: null,
+    degree: 'first',
+  }
+}
+
+export default function FamilyHistoryBuilder({ members, noFamilyHistory, onChange }: Props) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const addMember = () => {
+    const m = emptyMember()
+    onChange([...members, m], false)
+    setExpandedId(m.id)
+  }
+
+  const removeMember = (id: string) => {
+    onChange(members.filter(m => m.id !== id), noFamilyHistory)
+  }
+
+  const updateMember = (id: string, patch: Partial<FamilyMember>) => {
+    onChange(
+      members.map(m => {
+        if (m.id !== id) return m
+        const updated = { ...m, ...patch }
+        if (patch.relative) {
+          updated.degree = getFamilyDegree(patch.relative)
+        }
+        return updated
+      }),
+      false
+    )
+  }
+
+  const setNoHistory = () => {
+    onChange([], true)
+    setExpandedId(null)
+  }
+
+  const getDiseaseLabel = (id: string) => DISEASES.find(d => d.id === id)?.label || ''
+  const getRelativeLabel = (id: string) => RELATIVES.find(r => r.id === id)?.label || ''
+
+  return (
+    <div>
+      {/* No Family History option */}
+      <button
+        className="chip-btn"
+        onClick={setNoHistory}
+        style={{
+          width: '100%',
+          padding: '13px 16px',
+          borderRadius: 12,
+          border: `1.5px solid ${noFamilyHistory ? '#34d399' : '#2a2a3a'}`,
+          background: noFamilyHistory ? '#052e16' : '#111118',
+          color: noFamilyHistory ? '#34d399' : '#666',
+          fontFamily: 'inherit',
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: 'pointer',
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <span style={{ fontSize: 18 }}>✅</span>
+        <span>لا يوجد تاريخ عائلي مرضي معروف</span>
+      </button>
+
+      {/* Members list */}
+      {members.map((m, idx) => {
+        const isExpanded = expandedId === m.id
+        const isComplete = m.relative && m.disease
+        return (
+          <div
+            key={m.id}
+            style={{
+              background: '#0d0d14',
+              border: `1px solid ${isComplete ? '#2a2a3a' : '#1e1e1e'}`,
+              borderRadius: 14,
+              marginBottom: 10,
+              overflow: 'hidden',
+              transition: 'border-color 0.2s',
+            }}
+          >
+            {/* Card header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '13px 16px',
+                cursor: 'pointer',
+              }}
+              onClick={() => setExpandedId(isExpanded ? null : m.id)}
+            >
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: isComplete ? '#052e16' : '#1a1a2a',
+                color: isComplete ? '#34d399' : '#555',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, flexShrink: 0,
+              }}>
+                {idx + 1}
+              </div>
+              <div style={{ flex: 1 }}>
+                {isComplete ? (
+                  <div style={{ color: '#ccc', fontSize: 13, fontWeight: 500 }}>
+                    {getRelativeLabel(m.relative)} — {getDiseaseLabel(m.disease)}
+                    {m.age_at_diagnosis && <span style={{ color: '#555', marginRight: 6 }}>({m.age_at_diagnosis} سنة)</span>}
+                  </div>
+                ) : (
+                  <div style={{ color: '#555', fontSize: 13 }}>اضغط لإكمال البيانات</div>
+                )}
+                {m.degree && isComplete && (
+                  <div style={{ fontSize: 10, color: m.degree === 'first' ? '#818cf8' : '#666', marginTop: 2 }}>
+                    {m.degree === 'first' ? '● درجة أولى' : '● درجة ثانية'}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeMember(m.id) }}
+                  style={{
+                    background: 'transparent', border: 'none', color: '#f8717166',
+                    cursor: 'pointer', fontSize: 16, padding: '2px 6px',
+                    borderRadius: 6, transition: 'color 0.15s',
+                  }}
+                >✕</button>
+                <span style={{ color: '#555', fontSize: 16 }}>{isExpanded ? '⌃' : '⌄'}</span>
+              </div>
+            </div>
+
+            {/* Expanded form */}
+            {isExpanded && (
+              <div style={{ padding: '0 16px 16px', borderTop: '1px solid #1a1a2a' }}>
+                <div style={{ paddingTop: 14 }}>
+                  {/* Relative */}
+                  <div style={styles.field}>
+                    <label style={styles.label}>صلة القرابة *</label>
+                    <select
+                      style={styles.select}
+                      value={m.relative}
+                      onChange={e => updateMember(m.id, { relative: e.target.value as RelativeType })}
+                    >
+                      <option value="">اختر...</option>
+                      {RELATIVES.map(r => (
+                        <option key={r.id} value={r.id}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Disease */}
+                  <div style={styles.field}>
+                    <label style={styles.label}>المرض *</label>
+                    <div style={styles.diseaseGrid}>
+                      {DISEASES.map(d => (
+                        <button
+                          key={d.id}
+                          className="chip-btn"
+                          onClick={() => updateMember(m.id, { disease: d.id as FamilyDisease })}
+                          style={{
+                            ...styles.diseaseChip,
+                            background: m.disease === d.id ? '#052e16' : '#111118',
+                            border: `1px solid ${m.disease === d.id ? '#34d399' : '#2a2a3a'}`,
+                            color: m.disease === d.id ? '#34d399' : '#888',
+                          }}
+                        >
+                          <span style={{ fontSize: 14 }}>{d.icon}</span>
+                          <span style={{ fontSize: 11 }}>{d.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Age at diagnosis */}
+                  <div style={styles.field}>
+                    <label style={styles.label}>عمر التشخيص (اختياري)</label>
+                    <input
+                      style={styles.input}
+                      type="number"
+                      placeholder="مثال: 55"
+                      value={m.age_at_diagnosis}
+                      onChange={e => updateMember(m.id, { age_at_diagnosis: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Status row */}
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ ...styles.field, flex: 1 }}>
+                      <label style={styles.label}>الحالة</label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {[{ val: true, label: 'على قيد الحياة' }, { val: false, label: 'متوفى' }].map(opt => (
+                          <button key={String(opt.val)} className="chip-btn"
+                            onClick={() => updateMember(m.id, { is_alive: opt.val })}
+                            style={{
+                              ...styles.smallChip,
+                              background: m.is_alive === opt.val ? '#052e16' : '#111118',
+                              color: m.is_alive === opt.val ? '#34d399' : '#666',
+                              border: `1px solid ${m.is_alive === opt.val ? '#34d399' : '#2a2a3a'}`,
+                            }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ ...styles.field, flex: 1 }}>
+                      <label style={styles.label}>التدخين</label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {[{ val: true, label: 'مدخن' }, { val: false, label: 'غير مدخن' }].map(opt => (
+                          <button key={String(opt.val)} className="chip-btn"
+                            onClick={() => updateMember(m.id, { is_smoker: opt.val })}
+                            style={{
+                              ...styles.smallChip,
+                              background: m.is_smoker === opt.val ? '#052e16' : '#111118',
+                              color: m.is_smoker === opt.val ? '#34d399' : '#666',
+                              border: `1px solid ${m.is_smoker === opt.val ? '#34d399' : '#2a2a3a'}`,
+                            }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div style={styles.field}>
+                    <label style={styles.label}>ملاحظات (اختياري)</label>
+                    <input
+                      style={styles.input}
+                      placeholder="مثال: تشخّص في عمر 45 وتوفي لاحقاً بجلطة"
+                      value={m.notes}
+                      onChange={e => updateMember(m.id, { notes: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Add button */}
+      {!noFamilyHistory && (
+        <button
+          onClick={addMember}
+          style={{
+            width: '100%',
+            padding: '13px 16px',
+            borderRadius: 12,
+            border: '1.5px dashed #2a2a3a',
+            background: 'transparent',
+            color: '#555',
+            fontFamily: 'inherit',
+            fontSize: 13,
+            cursor: 'pointer',
+            marginTop: 4,
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <span style={{ fontSize: 18, color: '#34d399' }}>+</span>
+          إضافة فرد من العائلة
+        </button>
+      )}
+
+      {/* Summary pills */}
+      {members.length > 0 && !noFamilyHistory && (
+        <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {members.filter(m => m.relative && m.disease).map(m => (
+            <span key={m.id} style={{
+              background: m.degree === 'first' ? '#818cf822' : '#2a2a3a',
+              color: m.degree === 'first' ? '#818cf8' : '#666',
+              border: `1px solid ${m.degree === 'first' ? '#818cf844' : '#2a2a3a'}`,
+              fontSize: 11, padding: '3px 10px', borderRadius: 100,
+            }}>
+              {getRelativeLabel(m.relative)} — {getDiseaseLabel(m.disease)}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  field: { marginBottom: 14 },
+  label: { display: 'block', fontSize: 11, color: '#555', marginBottom: 6, fontWeight: 500, letterSpacing: '0.3px' },
+  input: {
+    width: '100%', padding: '11px 14px', borderRadius: 10,
+    border: '1.5px solid #2a2a3a', background: '#111118', color: 'white',
+    fontSize: 14, fontFamily: 'inherit',
+  },
+  select: {
+    width: '100%', padding: '11px 14px', borderRadius: 10,
+    border: '1.5px solid #2a2a3a', background: '#111118', color: 'white',
+    fontSize: 14, fontFamily: 'inherit', cursor: 'pointer',
+  },
+  diseaseGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8,
+  },
+  diseaseChip: {
+    padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+    fontFamily: 'inherit', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', gap: 4, transition: 'all 0.15s',
+  },
+  smallChip: {
+    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+    fontFamily: 'inherit', fontSize: 12, transition: 'all 0.15s',
+    border: 'none',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/recommendations/RecommendationCard.tsx
+================================================================================
+
+'use client'
+import { useState } from 'react'
+import type { Screening } from '@/types'
+
+const CATEGORY_ICONS: Record<string, string> = {
+  blood: '🩸',
+  imaging: '🔬',
+  cardiology: '❤️',
+  cancer: '🎗️',
+  lifestyle: '💪',
+  general: '🩺',
+  hormones: '⚗️',
+  vitamins: '💊',
+}
+
+const URGENCY_CONFIG = {
+  'عاجل': { color: '#f87171', bg: '#2d0a0a', border: '#f8717133', dot: '#f87171' },
+  'مهم': { color: '#fbbf24', bg: '#2d1a00', border: '#fbbf2433', dot: '#fbbf24' },
+  'روتيني': { color: '#34d399', bg: '#052e16', border: '#34d39933', dot: '#34d399' },
+}
+
+interface Props {
+  screening: Screening
+  index: number
+}
+
+export default function RecommendationCard({ screening, index }: Props) {
+  const [showInfo, setShowInfo] = useState(false)
+  const uc = URGENCY_CONFIG[screening.urgency] || URGENCY_CONFIG['روتيني']
+  const icon = CATEGORY_ICONS[screening.category] || '🩺'
+
+  return (
+    <>
+      <div
+        style={{
+          background: '#0d0d14',
+          border: `1px solid ${uc.border}`,
+          borderRadius: 14,
+          padding: '16px 18px',
+          marginBottom: 10,
+          animation: `fadeUp 0.4s ease both`,
+          animationDelay: `${index * 0.06}s`,
+          position: 'relative',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          {/* Icon */}
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: uc.bg, border: `1px solid ${uc.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18,
+          }}>
+            {icon}
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: '#ddd', fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
+                  {screening.name}
+                </div>
+                <div style={{ color: '#555', fontSize: 11 }}>{screening.nameEn}</div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                <span style={{
+                  background: uc.bg, color: uc.color, border: `1px solid ${uc.border}`,
+                  fontSize: 10, padding: '3px 10px', borderRadius: 100, fontWeight: 600,
+                }}>
+                  {screening.urgency}
+                </span>
+
+                {/* Info button */}
+                <button
+                  onClick={() => setShowInfo(true)}
+                  style={{
+                    width: 24, height: 24, borderRadius: '50%',
+                    background: '#1a1a2a', border: '1px solid #2a2a3a',
+                    color: '#818cf8', cursor: 'pointer', fontSize: 12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s', fontWeight: 700,
+                  }}
+                  title="لماذا هذا الفحص؟"
+                >
+                  ⓘ
+                </button>
+              </div>
+            </div>
+
+            {/* Frequency + source */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: '#111118', border: '1px solid #2a2a3a',
+                borderRadius: 8, padding: '5px 10px',
+              }}>
+                <span style={{ fontSize: 12 }}>🗓</span>
+                <span style={{ color: '#aaa', fontSize: 12, fontWeight: 500 }}>{screening.freq}</span>
+              </div>
+
+              <div style={{
+                fontSize: 10, color: '#444', background: '#0d0d14',
+                border: '1px solid #1a1a2a', borderRadius: 6, padding: '3px 8px',
+              }}>
+                {screening.guidelineSource}
+              </div>
+            </div>
+
+            {/* Trigger pills */}
+            {screening.triggerReasons.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                {screening.triggerReasons.map((r, i) => (
+                  <span key={i} style={{
+                    background: '#111118', color: '#666', border: '1px solid #1e1e2a',
+                    fontSize: 10, padding: '2px 8px', borderRadius: 100,
+                  }}>
+                    {r}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Info Modal */}
+      {showInfo && (
+        <InfoModal screening={screening} uc={uc} icon={icon} onClose={() => setShowInfo(false)} />
+      )}
+    </>
+  )
+}
+
+function InfoModal({ screening, uc, icon, onClose }: {
+  screening: Screening
+  uc: { color: string; bg: string; border: string }
+  icon: string
+  onClose: () => void
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#0a0a12', border: `1px solid ${uc.border}`,
+          borderRadius: 20, padding: 28, maxWidth: 480, width: '100%',
+          maxHeight: '80vh', overflowY: 'auto',
+          animation: 'fadeUp 0.25s ease',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 20 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: uc.bg, border: `1px solid ${uc.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          }}>
+            {icon}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{screening.name}</div>
+            <div style={{ color: '#555', fontSize: 12 }}>{screening.nameEn}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: 'none', color: '#555',
+            fontSize: 20, cursor: 'pointer', padding: '4px 8px',
+          }}>✕</button>
+        </div>
+
+        {/* Why this test */}
+        <InfoSection title="لماذا هذا الفحص؟" icon="💡">
+          <p style={styles.text}>{screening.explanation}</p>
+        </InfoSection>
+
+        {/* Why this interval */}
+        <InfoSection title="لماذا هذه الفترة الزمنية؟" icon="🗓">
+          <p style={styles.text}>{screening.intervalReason}</p>
+        </InfoSection>
+
+        {/* Personal risk factors */}
+        {screening.triggerReasons.length > 0 && (
+          <InfoSection title="عوامل الخطر الشخصية التي تفعّلت" icon="⚠">
+            {screening.triggerReasons.map((r, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                <span style={{ color: uc.color, flexShrink: 0 }}>▸</span>
+                <span style={styles.text}>{r}</span>
+              </div>
+            ))}
+          </InfoSection>
+        )}
+
+        {/* Guideline source */}
+        <div style={{
+          background: '#111118', border: '1px solid #1e1e2a',
+          borderRadius: 10, padding: '10px 14px',
+          display: 'flex', gap: 10, alignItems: 'center', marginTop: 4,
+        }}>
+          <span style={{ fontSize: 14 }}>📖</span>
+          <div>
+            <div style={{ color: '#555', fontSize: 10, marginBottom: 2 }}>المصدر الطبي</div>
+            <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 500 }}>{screening.guidelineSource}</div>
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div style={{
+          marginTop: 14, padding: '10px 14px', background: '#0d0d14',
+          border: '1px solid #1a1a2a', borderRadius: 10,
+          color: '#444', fontSize: 11, lineHeight: 1.7, textAlign: 'center',
+        }}>
+          هذه التوصية توعوية مبنية على الإرشادات الطبية المعتمدة. استشر طبيبك قبل إجراء أي فحص.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function InfoSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+        color: '#888', fontSize: 12, fontWeight: 600,
+      }}>
+        <span>{icon}</span>
+        <span>{title}</span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  text: { color: '#aaa', fontSize: 13, lineHeight: 1.8, margin: 0 },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/components/dashboard/TrendChart.tsx
+================================================================================
+
+'use client'
+import type { TrendPoint } from '@/types'
+
+interface Props {
+  data: TrendPoint[]
+  color?: string
+  label?: string
+  unit?: string
+  height?: number
+  showDots?: boolean
+}
+
+export default function TrendChart({
+  data, color = '#34d399', label, unit = '',
+  height = 80, showDots = true
+}: Props) {
+  if (!data || data.length === 0) return (
+    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: '#444', fontSize: 12 }}>لا توجد بيانات كافية</span>
+    </div>
+  )
+
+  if (data.length === 1) return (
+    <div style={{ height, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <span style={{ fontSize: 28, fontWeight: 800, color }}>{data[0].value}</span>
+      <span style={{ color: '#555', fontSize: 12 }}>{unit} — قراءة واحدة فقط</span>
+    </div>
+  )
+
+  const values = data.map(d => d.value)
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+  const w = 100
+  const h = height
+
+  const pts = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * w
+    const y = h - ((d.value - min) / range) * (h * 0.8) - h * 0.1
+    return { x, y, ...d }
+  })
+
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
+  const polygon = `0,${h} ${polyline} ${w},${h}`
+
+  // Trend arrow
+  const first = values[0], last = values[values.length - 1]
+  const trend = last > first ? '↑' : last < first ? '↓' : '→'
+  const trendColor = last > first ? '#f87171' : last < first ? '#34d399' : '#fbbf24'
+  const trendPct = first !== 0 ? (((last - first) / first) * 100).toFixed(1) : '0'
+
+  return (
+    <div>
+      {label && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ color: '#888', fontSize: 12, fontWeight: 600 }}>{label}</span>
+          <span style={{ color: trendColor, fontSize: 12, fontWeight: 700 }}>
+            {trend} {Math.abs(parseFloat(trendPct))}%
+          </span>
+        </div>
+      )}
+
+      <svg
+        viewBox={`0 0 100 ${h}`}
+        style={{ width: '100%', height }}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map((pct, i) => (
+          <line key={i}
+            x1="0" y1={h * pct} x2={w} y2={h * pct}
+            stroke="#1a1a2a" strokeWidth="0.5"
+          />
+        ))}
+
+        {/* Fill area */}
+        <polygon points={polygon} fill={`url(#grad-${label})`} />
+
+        {/* Line */}
+        <polyline
+          points={polyline}
+          fill="none" stroke={color}
+          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        />
+
+        {/* Dots */}
+        {showDots && pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="2" fill={color} />
+        ))}
+      </svg>
+
+      {/* X-axis dates */}
+      {data.length <= 8 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+          {data.map((d, i) => (
+            <span key={i} style={{ fontSize: 9, color: '#444' }}>
+              {new Date(d.date).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Min/Max labels */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        <span style={{ fontSize: 10, color: '#555' }}>
+          أقل: <strong style={{ color }}>{min}{unit}</strong>
+        </span>
+        <span style={{ fontSize: 10, color: '#555' }}>
+          أعلى: <strong style={{ color }}>{max}{unit}</strong>
+        </span>
+      </div>
+    </div>
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/hooks/useAuth.ts
+================================================================================
+
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
+  return { user, loading, signOut }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/hooks/useReports.ts
+================================================================================
+
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from './useAuth'
+import type { HealthReport, LabReport } from '@/types'
+
+export function useHealthReports(limit = 50) {
+  const { user } = useAuth()
+  const [reports, setReports] = useState<HealthReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
+
+  const fetch = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    const { data, error: err } = await supabase
+      .from('health_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (err) setError(err.message)
+    else setReports(data ?? [])
+    setLoading(false)
+  }, [user, limit])
+
+  useEffect(() => { fetch() }, [fetch])
+
+  const deleteReport = async (id: string) => {
+    const { error: err } = await supabase.from('health_reports').delete().eq('id', id)
+    if (!err) setReports(prev => prev.filter(r => r.id !== id))
+    return !err
+  }
+
+  return { reports, loading, error, refetch: fetch, deleteReport }
+}
+
+export function useLabReports(limit = 50) {
+  const { user } = useAuth()
+  const [reports, setReports] = useState<LabReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  const fetchData = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    const { data } = await supabase
+      .from('lab_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    setReports(data ?? [])
+    setLoading(false)
+  }, [user, limit])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const deleteReport = async (id: string) => {
+    const { error } = await supabase.from('lab_reports').delete().eq('id', id)
+    if (!error) setReports(prev => prev.filter(r => r.id !== id))
+    return !error
+  }
+
+  return { reports, loading, refetch: fetchData, deleteReport }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/hooks/useToast.ts
+================================================================================
+
+'use client'
+import { useState, useCallback } from 'react'
+import type { Toast } from '@/types'
+
+export function useToast() {
+  const [toasts, setToasts] = useState<Toast[]>([])
+
+  const addToast = useCallback((message: string, type: Toast['type'] = 'info') => {
+    const id = Math.random().toString(36).slice(2)
+    setToasts(prev => [...prev, { id, message, type }])
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+    }, 4000)
+  }, [])
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  return { toasts, addToast, removeToast }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/supabase/schema.sql
+================================================================================
+
+-- ============================================================
+-- WIQAYA DATABASE SCHEMA v2
+-- Run this in: Supabase Dashboard → SQL Editor → Run
+-- ============================================================
+
+create extension if not exists "uuid-ossp";
+
+-- ── PROFILES ────────────────────────────────────────────────
+create table if not exists public.profiles (
+  id uuid references auth.users(id) on delete cascade primary key,
+  email text not null,
+  full_name text,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+
+-- Auto-create profile on new user
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email)
+  values (new.id, new.email)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- ── HEALTH REPORTS ───────────────────────────────────────────
+create table if not exists public.health_reports (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+
+  -- Demographics
+  age integer not null check (age > 0 and age < 130),
+  gender text not null check (gender in ('male', 'female')),
+  height numeric(5,1) not null,
+  weight numeric(5,1) not null,
+  bmi numeric(4,1) not null,
+  waist_circumference numeric(5,1),
+
+  -- Risk
+  risk_score integer not null check (risk_score >= 0 and risk_score <= 100),
+  risk_level text not null check (risk_level in ('منخفض', 'متوسط', 'مرتفع')),
+  risk_breakdown jsonb default '[]'::jsonb,
+
+  -- History
+  family_members jsonb default '[]'::jsonb,
+  no_family_history boolean default false,
+
+  -- Lifestyle
+  habits jsonb default '{}'::jsonb,
+
+  -- Results
+  screenings jsonb default '[]'::jsonb,
+  lifestyle_tips jsonb default '[]'::jsonb,
+  positives jsonb default '[]'::jsonb,
+
+  -- AI
+  ai_insight text,
+
+  created_at timestamptz default now() not null
+);
+
+create index if not exists health_reports_user_id_idx on public.health_reports(user_id);
+create index if not exists health_reports_created_at_idx on public.health_reports(created_at desc);
+create index if not exists health_reports_risk_score_idx on public.health_reports(risk_score);
+
+-- ── LAB REPORTS ──────────────────────────────────────────────
+create table if not exists public.lab_reports (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+
+  -- File
+  file_name text not null,
+  file_url text not null,
+  file_type text not null,
+  file_size integer,
+
+  -- Processing
+  extracted_text text,
+  ai_analysis text,
+  status text default 'pending' check (status in ('pending', 'processing', 'done', 'error')),
+
+  -- Results
+  has_abnormal_values boolean default false,
+  urgent_flag boolean default false,
+  summary text,
+
+  created_at timestamptz default now() not null
+);
+
+create index if not exists lab_reports_user_id_idx on public.lab_reports(user_id);
+create index if not exists lab_reports_created_at_idx on public.lab_reports(created_at desc);
+create index if not exists lab_reports_urgent_idx on public.lab_reports(urgent_flag) where urgent_flag = true;
+
+-- ── ROW LEVEL SECURITY ───────────────────────────────────────
+alter table public.profiles enable row level security;
+alter table public.health_reports enable row level security;
+alter table public.lab_reports enable row level security;
+
+-- Profiles
+drop policy if exists "Users can view own profile" on public.profiles;
+create policy "Users can view own profile"
+  on public.profiles for select using (auth.uid() = id);
+
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
+  on public.profiles for update using (auth.uid() = id);
+
+-- Health Reports
+drop policy if exists "Users can view own health reports" on public.health_reports;
+create policy "Users can view own health reports"
+  on public.health_reports for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own health reports" on public.health_reports;
+create policy "Users can insert own health reports"
+  on public.health_reports for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own health reports" on public.health_reports;
+create policy "Users can delete own health reports"
+  on public.health_reports for delete using (auth.uid() = user_id);
+
+-- Lab Reports
+drop policy if exists "Users can view own lab reports" on public.lab_reports;
+create policy "Users can view own lab reports"
+  on public.lab_reports for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own lab reports" on public.lab_reports;
+create policy "Users can insert own lab reports"
+  on public.lab_reports for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own lab reports" on public.lab_reports;
+create policy "Users can update own lab reports"
+  on public.lab_reports for update using (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own lab reports" on public.lab_reports;
+create policy "Users can delete own lab reports"
+  on public.lab_reports for delete using (auth.uid() = user_id);
+
+-- ── STORAGE BUCKET ───────────────────────────────────────────
+-- Run this separately if the bucket doesn't exist yet:
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'lab-files', 'lab-files', false,
+  10485760,  -- 10MB
+  array['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+
+-- Storage policies
+drop policy if exists "Users upload own files" on storage.objects;
+create policy "Users upload own files"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'lab-files'
+    and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "Users view own files" on storage.objects;
+create policy "Users view own files"
+  on storage.objects for select
+  using (
+    bucket_id = 'lab-files'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+drop policy if exists "Users delete own files" on storage.objects;
+create policy "Users delete own files"
+  on storage.objects for delete
+  using (
+    bucket_id = 'lab-files'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- ── VERIFY ───────────────────────────────────────────────────
+-- After running, check:
+select table_name from information_schema.tables
+where table_schema = 'public'
+order by table_name;
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/layout.tsx
+================================================================================
+
+import type { Metadata, Viewport } from 'next'
+
+export const metadata: Metadata = {
+  title: 'وِقاية — الرعاية الصحية الوقائية',
+  description: 'تحليل ذكي لمخاطرك الصحية قبل حدوث المرض. مبني على إرشادات طبية معتمدة.',
+  keywords: ['صحة', 'وقاية', 'فحوصات', 'طب وقائي', 'تحليل صحي'],
+  authors: [{ name: 'Wiqaya Health' }],
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#080810',
+}
+
+const globalCSS = `
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #080810;
+    color: white;
+    font-family: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  button {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  input, select, textarea {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #34d399 !important;
+  }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0d0d14;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a3a;
+    border-radius: 2px;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @keyframes scoreCount {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Utility classes */
+  .fade-up {
+    animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .fade-up-d1 { animation-delay: 0.08s; }
+  .fade-up-d2 { animation-delay: 0.16s; }
+  .fade-up-d3 { animation-delay: 0.24s; }
+  .fade-up-d4 { animation-delay: 0.32s; }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease both;
+  }
+
+  .chip-btn {
+    transition: all 0.15s ease;
+  }
+
+  .chip-btn:hover {
+    opacity: 0.85;
+    transform: scale(0.97);
+  }
+
+  .nav-dot {
+    transition: all 0.3s ease;
+  }
+
+  .score-animate {
+    animation: scoreCount 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 0.25s;
+  }
+
+  .cursor-blink::after {
+    content: '|';
+    animation: pulse 1s infinite;
+    margin-right: 1px;
+    color: #34d399;
+  }
+
+  /* Mobile responsive layout */
+  @media (max-width: 768px) {
+    .sidebar-el {
+      display: none !important;
+    }
+
+    .mobile-nav-el {
+      display: flex !important;
+    }
+
+    .main-el {
+      margin-right: 0 !important;
+      padding-bottom: 80px !important;
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-el {
+      padding-top: 20px !important;
+    }
+  }
+`
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <style dangerouslySetInnerHTML={{ __html: globalCSS }} />
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/page.tsx
+================================================================================
+
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+
+export default async function RootPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    redirect('/dashboard')
+  } else {
+    redirect('/login')
+  }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/api/analyze-lab/route.ts
+================================================================================
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { analyzeLabReportVision } from '@/lib/claude'
+
+const MAX_SIZE = 10 * 1024 * 1024
+const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const formData = await req.formData()
+    const file = formData.get('file') as File | null
+
+    if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
+    if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: 'نوع الملف غير مدعوم. استخدم PDF أو JPG أو PNG' }, { status: 400 })
+    if (file.size > MAX_SIZE) return NextResponse.json({ error: 'حجم الملف يتجاوز 10 ميجابايت' }, { status: 400 })
+
+    // Upload to Supabase Storage
+    const ext = file.name.split('.').pop() ?? 'bin'
+    const storagePath = `${user.id}/${Date.now()}.${ext}`
+    const buffer = new Uint8Array(await file.arrayBuffer())
+
+    const { error: uploadError } = await supabase.storage
+      .from('lab-files')
+      .upload(storagePath, buffer, { contentType: file.type, upsert: false })
+
+    if (uploadError) {
+      console.error('Storage error:', uploadError)
+      return NextResponse.json({ error: 'فشل رفع الملف' }, { status: 500 })
+    }
+
+    // Get signed URL (7 days)
+    const { data: urlData } = await supabase.storage
+      .from('lab-files')
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
+
+    // Create DB record
+    const { data: labRecord, error: dbError } = await supabase
+      .from('lab_reports')
+      .insert({
+        user_id: user.id,
+        file_name: file.name,
+        file_url: urlData?.signedUrl ?? '',
+        file_type: file.type,
+        file_size: file.size,
+        status: 'processing',
+      })
+      .select('id')
+      .single()
+
+    if (dbError || !labRecord) {
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
+
+    // Send to Claude Vision
+    const base64 = Buffer.from(buffer).toString('base64')
+    const { analysis, hasAbnormal, urgentFlag, summary } = await analyzeLabReportVision(base64, file.type)
+
+    // Update DB record
+    await supabase
+      .from('lab_reports')
+      .update({
+        ai_analysis: analysis,
+        has_abnormal_values: hasAbnormal,
+        urgent_flag: urgentFlag,
+        summary,
+        status: 'done',
+      })
+      .eq('id', labRecord.id)
+
+    return NextResponse.json({
+      success: true,
+      labReport: {
+        id: labRecord.id,
+        fileName: file.name,
+        analysis,
+        hasAbnormal,
+        urgentFlag,
+        summary,
+        status: 'done',
+      }
+    })
+
+  } catch (err) {
+    console.error('analyze-lab error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/api/analyze-health/route.ts
+================================================================================
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { analyzeHealthRisk } from '@/lib/claude'
+import {
+  calculateBMI, getBMICategory,
+  calculateRiskScore, getRiskMeta,
+  buildScreenings, buildLifestyleTips,
+  buildPositives, buildFamilySummary,
+} from '@/lib/risk-engine'
+import type { HealthFormData } from '@/types'
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const form: HealthFormData = await req.json()
+
+    if (!form.age || !form.gender || !form.height || !form.weight) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Compute everything
+    const bmi = calculateBMI(form.height, form.weight)!
+    const bmiMeta = getBMICategory(bmi)
+    const { total: riskScore, breakdown } = calculateRiskScore(form, bmi)
+    const riskMeta = getRiskMeta(riskScore)
+    const screenings = buildScreenings(form, bmi, riskScore)
+    const lifestyleTips = buildLifestyleTips(form, bmi)
+    const positives = buildPositives(form, bmi)
+    const familySummary = buildFamilySummary(form)
+
+    // Claude AI insight (server-side — API key never reaches browser)
+    let aiInsight = ''
+    try {
+      aiInsight = await analyzeHealthRisk({
+        age: parseInt(form.age),
+        gender: form.gender as string,
+        bmi,
+        bmiLabel: bmiMeta.label,
+        smoking: form.habits.smoking,
+        exercise: form.habits.exercise,
+        sleep: form.habits.sleep,
+        diet: form.habits.diet,
+        stress: form.habits.stress,
+        familyHistory: familySummary,
+        riskScore,
+        riskLevel: riskMeta.level,
+        topRisks: breakdown
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map(b => b.category)
+          .join('، '),
+      })
+    } catch (claudeErr) {
+      console.error('Claude error (non-fatal):', claudeErr)
+      aiInsight = 'تعذّر الحصول على تحليل AI الآن. بياناتك حُفظت بنجاح.'
+    }
+
+    // Save to Supabase
+    const { data: savedReport, error: dbError } = await supabase
+      .from('health_reports')
+      .insert({
+        user_id: user.id,
+        age: parseInt(form.age),
+        gender: form.gender,
+        height: parseFloat(form.height),
+        weight: parseFloat(form.weight),
+        bmi,
+        risk_score: riskScore,
+        risk_level: riskMeta.level,
+        family_members: form.familyMembers,
+        no_family_history: form.noFamilyHistory,
+        habits: form.habits,
+        screenings,
+        lifestyle_tips: lifestyleTips,
+        positives,
+        risk_breakdown: breakdown,
+        ai_insight: aiInsight,
+      })
+      .select('id')
+      .single()
+
+    if (dbError) console.error('DB save error (non-fatal):', dbError)
+
+    return NextResponse.json({
+      report: {
+        id: savedReport?.id,
+        bmi,
+        bmiMeta,
+        riskScore,
+        riskLevel: riskMeta.level,
+        riskColor: riskMeta.color,
+        riskBg: riskMeta.bg,
+        riskDescription: riskMeta.description,
+        screenings,
+        lifestyleTips,
+        positives,
+        riskBreakdown: breakdown,
+        aiInsight,
+        savedToDb: !dbError,
+      }
+    })
+
+  } catch (err) {
+    console.error('analyze-health error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/api/auth/callback/route.ts
+================================================================================
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
+
+  if (code) {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`)
+    }
+  }
+
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(auth)/layout.tsx
+================================================================================
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(auth)/signup/page.tsx
+================================================================================
+
+'use client'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+
+export default function SignupPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignup = async () => {
+    if (!email || !password || !fullName) { setError('يرجى ملء جميع الحقول'); return }
+    if (password.length < 6) { setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return }
+
+    setLoading(true)
+    setError('')
+
+    const { data, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+      }
+    })
+
+    if (authError) {
+      setError('حدث خطأ في إنشاء الحساب. تأكد من صحة البريد الإلكتروني.')
+      setLoading(false)
+      return
+    }
+
+    // Update profile name
+    if (data.user) {
+      await supabase.from('profiles').update({ full_name: fullName }).eq('id', data.user.id)
+    }
+
+    // If email confirmation is disabled, redirect directly
+    if (data.session) {
+      router.push('/dashboard')
+      router.refresh()
+    } else {
+      setSuccess(true)
+    }
+
+    setLoading(false)
+  }
+
+  if (success) {
+    return (
+      <div style={styles.root}>
+        <style>{globalStyles}</style>
+        <div style={styles.card}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+          <h2 style={{ color: 'white', marginBottom: 8 }}>تحقق من بريدك</h2>
+          <p style={{ color: '#666', fontSize: 14, lineHeight: 1.7 }}>
+            أرسلنا رابط تأكيد إلى <strong style={{ color: '#34d399' }}>{email}</strong>
+            <br />افتح البريد وانقر على الرابط لتفعيل حسابك
+          </p>
+          <Link href="/login" style={{ ...styles.btn, display: 'block', textAlign: 'center', marginTop: 24, textDecoration: 'none' }}>
+            الانتقال لتسجيل الدخول
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={styles.root}>
+      <style>{globalStyles}</style>
+      <div style={styles.card}>
+        <div style={styles.logo}>🛡 وِقاية</div>
+        <h1 style={styles.title}>إنشاء حساب</h1>
+        <p style={styles.subtitle}>انضم وابدأ رحلتك الوقائية</p>
+
+        <div style={styles.field}>
+          <label style={styles.label}>الاسم الكامل</label>
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="عبدالله محمد"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>البريد الإلكتروني</label>
+          <input
+            style={styles.input}
+            type="email"
+            placeholder="example@gmail.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            dir="ltr"
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>كلمة المرور</label>
+          <input
+            style={styles.input}
+            type="password"
+            placeholder="6 أحرف على الأقل"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSignup()}
+            dir="ltr"
+          />
+        </div>
+
+        {error && <div style={styles.error}>{error}</div>}
+
+        <button style={{ ...styles.btn, opacity: loading ? 0.6 : 1 }} onClick={handleSignup} disabled={loading}>
+          {loading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+        </button>
+
+        <p style={styles.switchText}>
+          لديك حساب بالفعل؟{' '}
+          <Link href="/login" style={styles.link}>تسجيل الدخول</Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const globalStyles = ``
+
+const styles: Record<string, React.CSSProperties> = {
+  root: {
+    minHeight: '100vh',
+    background: '#080810',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+    direction: 'rtl',
+    padding: 20,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    background: '#0d0d14',
+    border: '1px solid #1a1a2a',
+    borderRadius: 20,
+    padding: 32,
+    animation: 'fadeUp 0.4s ease',
+  },
+  logo: { fontSize: 22, fontWeight: 700, color: '#34d399', marginBottom: 24 },
+  title: { fontSize: 24, fontWeight: 700, color: 'white', marginBottom: 6, letterSpacing: '-0.5px' },
+  subtitle: { color: '#555', fontSize: 14, marginBottom: 28 },
+  field: { marginBottom: 16 },
+  label: { display: 'block', fontSize: 12, color: '#666', marginBottom: 6, fontWeight: 500 },
+  input: {
+    width: '100%', padding: '13px 16px', borderRadius: 12,
+    border: '1.5px solid #2a2a3a', background: '#111118', color: 'white',
+    fontSize: 15, fontFamily: 'inherit', transition: 'border-color 0.2s',
+  },
+  error: {
+    background: '#2d0a0a', border: '1px solid #f8717433',
+    color: '#f87171', padding: '10px 14px', borderRadius: 10, fontSize: 13, marginBottom: 12,
+  },
+  btn: {
+    width: '100%', padding: '15px 24px', border: 'none', borderRadius: 14,
+    background: 'linear-gradient(135deg, #059669, #34d399)', color: '#001a0e',
+    fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit', marginTop: 8,
+  },
+  switchText: { color: '#555', fontSize: 13, textAlign: 'center', marginTop: 20 },
+  link: { color: '#34d399', textDecoration: 'none', fontWeight: 600 },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(auth)/login/page.tsx
+================================================================================
+
+'use client'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogin = async () => {
+    if (!email || !password) { setError('يرجى ملء جميع الحقول'); return }
+    setLoading(true)
+    setError('')
+
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (authError) {
+      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
+      setLoading(false)
+      return
+    }
+
+    router.push('/dashboard')
+    router.refresh()
+  }
+
+  return (
+    <div style={styles.root}>
+      <style>{globalStyles}</style>
+      <div style={styles.card}>
+        <div style={styles.logo}>🛡 وِقاية</div>
+        <h1 style={styles.title}>تسجيل الدخول</h1>
+        <p style={styles.subtitle}>مرحباً بعودتك</p>
+
+        <div style={styles.field}>
+          <label style={styles.label}>البريد الإلكتروني</label>
+          <input
+            style={styles.input}
+            type="email"
+            placeholder="example@gmail.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            dir="ltr"
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>كلمة المرور</label>
+          <input
+            style={styles.input}
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            dir="ltr"
+          />
+        </div>
+
+        {error && <div style={styles.error}>{error}</div>}
+
+        <button style={{ ...styles.btn, opacity: loading ? 0.6 : 1 }} onClick={handleLogin} disabled={loading}>
+          {loading ? 'جاري الدخول...' : 'دخول'}
+        </button>
+
+        <p style={styles.switchText}>
+          ليس لديك حساب؟{' '}
+          <Link href="/signup" style={styles.link}>إنشاء حساب</Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const globalStyles = ``
+
+const styles: Record<string, React.CSSProperties> = {
+  root: {
+    minHeight: '100vh',
+    background: '#080810',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+    direction: 'rtl',
+    padding: 20,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    background: '#0d0d14',
+    border: '1px solid #1a1a2a',
+    borderRadius: 20,
+    padding: 32,
+    animation: 'fadeUp 0.4s ease',
+  },
+  logo: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#34d399',
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 700,
+    color: 'white',
+    marginBottom: 6,
+    letterSpacing: '-0.5px',
+  },
+  subtitle: {
+    color: '#555',
+    fontSize: 14,
+    marginBottom: 28,
+  },
+  field: {
+    marginBottom: 16,
+  },
+  label: {
+    display: 'block',
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+    fontWeight: 500,
+  },
+  input: {
+    width: '100%',
+    padding: '13px 16px',
+    borderRadius: 12,
+    border: '1.5px solid #2a2a3a',
+    background: '#111118',
+    color: 'white',
+    fontSize: 15,
+    fontFamily: 'inherit',
+    transition: 'border-color 0.2s',
+  },
+  error: {
+    background: '#2d0a0a',
+    border: '1px solid #f8717433',
+    color: '#f87171',
+    padding: '10px 14px',
+    borderRadius: 10,
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  btn: {
+    width: '100%',
+    padding: '15px 24px',
+    border: 'none',
+    borderRadius: 14,
+    background: 'linear-gradient(135deg, #059669, #34d399)',
+    color: '#001a0e',
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    marginTop: 8,
+    transition: 'opacity 0.2s',
+  },
+  switchText: {
+    color: '#555',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  link: {
+    color: '#34d399',
+    textDecoration: 'none',
+    fontWeight: 600,
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(app)/layout.tsx
+================================================================================
+
+'use client'
+import { useAuth } from '@/hooks/useAuth'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+const NAV_ITEMS = [
+  { href: '/dashboard', label: 'الرئيسية', icon: '⬡' },
+  { href: '/assessment', label: 'تحليل جديد', icon: '✦' },
+  { href: '/lab', label: 'تحاليل مخبرية', icon: '🧪' },
+  { href: '/history', label: 'السجل', icon: '📋' },
+]
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, signOut } = useAuth()
+  const pathname = usePathname()
+
+  return (
+    <div style={styles.root}>
+      <style>{globalStyles}</style>
+
+      {/* Desktop Sidebar */}
+      <aside style={styles.sidebar} className="sidebar-el">
+        <div style={styles.sidebarLogo}>🛡 وِقاية</div>
+
+        <nav style={styles.nav}>
+          {NAV_ITEMS.map(item => {
+            const active = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href} style={{
+                ...styles.navItem,
+                background: active ? '#052e16' : 'transparent',
+                color: active ? '#34d399' : '#555',
+                border: `1px solid ${active ? '#34d39933' : 'transparent'}`,
+              }}>
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div style={styles.sidebarFooter}>
+          <div style={styles.userInfo}>
+            <div style={styles.userAvatar}>
+              {user?.email?.[0]?.toUpperCase() ?? 'U'}
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={styles.userEmail}>{user?.email}</div>
+            </div>
+          </div>
+          <button style={styles.signOutBtn} onClick={signOut}>
+            خروج
+          </button>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main style={styles.main} className="main-el">
+        {children}
+      </main>
+
+      {/* Mobile bottom nav */}
+      <nav style={styles.mobileNav} className="mobile-nav-el">
+        {NAV_ITEMS.map(item => {
+          const active = pathname === item.href
+          return (
+            <Link key={item.href} href={item.href} style={{
+              ...styles.mobileNavItem,
+              color: active ? '#34d399' : '#444',
+            }}>
+              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              <span style={{ fontSize: 10 }}>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
+
+const globalStyles = `
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes scoreCount {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .fade-up { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+  .fade-up-d1 { animation-delay: 0.08s; }
+  .fade-up-d2 { animation-delay: 0.16s; }
+  .fade-up-d3 { animation-delay: 0.24s; }
+  .chip-btn { transition: all 0.15s ease; }
+  .chip-btn:hover { opacity: 0.85; transform: scale(0.97); }
+  .nav-dot { transition: all 0.3s ease; }
+  .score-animate { animation: scoreCount 0.6s cubic-bezier(0.22,1,0.36,1) both; animation-delay: 0.3s; }
+  input:focus { outline: none; border-color: #34d399 !important; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type=number] { -moz-appearance: textfield; }
+  .cursor-blink::after { content: '|'; animation: pulse 1s infinite; margin-right: 1px; color: #34d399; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0d0d14; }
+  ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 2px; }
+
+  @media (max-width: 768px) {
+    .sidebar-el { display: none !important; }
+    .mobile-nav-el { display: flex !important; }
+    .main-el { margin-right: 0 !important; padding-bottom: 80px !important; }
+  }
+`
+
+const styles: Record<string, React.CSSProperties> = {
+  root: {
+    minHeight: '100vh',
+    background: '#080810',
+    color: 'white',
+    display: 'flex',
+  },
+  sidebar: {
+    width: 220,
+    minHeight: '100vh',
+    background: '#0a0a12',
+    borderLeft: '1px solid #1a1a2a',
+    padding: '24px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'fixed',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 100,
+  },
+  sidebarLogo: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: '#34d399',
+    marginBottom: 32,
+    paddingRight: 8,
+  },
+  nav: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    flex: 1,
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '10px 12px',
+    borderRadius: 10,
+    fontSize: 13,
+    fontWeight: 500,
+    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+    transition: 'all 0.15s',
+    cursor: 'pointer',
+  },
+  sidebarFooter: {
+    borderTop: '1px solid #1a1a2a',
+    paddingTop: 16,
+  },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    background: '#052e16',
+    border: '1px solid #34d39933',
+    color: '#34d399',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 13,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  userEmail: {
+    fontSize: 11,
+    color: '#555',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  signOutBtn: {
+    width: '100%',
+    padding: '8px 12px',
+    border: '1px solid #2a2a3a',
+    borderRadius: 8,
+    background: 'transparent',
+    color: '#555',
+    fontSize: 12,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  main: {
+    flex: 1,
+    marginRight: 220,
+    padding: '32px 24px',
+    maxWidth: '100%',
+    overflowX: 'hidden',
+  },
+  mobileNav: {
+    display: 'none',
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: '#0a0a12',
+    borderTop: '1px solid #1a1a2a',
+    padding: '10px 0 20px',
+    justifyContent: 'space-around',
+    zIndex: 100,
+  },
+  mobileNavItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    padding: '4px 12px',
+    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+    transition: 'color 0.15s',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(app)/history/page.tsx
+================================================================================
+
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/useToast'
+import { ToastContainer } from '@/components/ui/Toast'
+import type { HealthReport } from '@/types'
+import Link from 'next/link'
+
+export default function HistoryPage() {
+  const { user } = useAuth()
+  const { toasts, addToast, removeToast } = useToast()
+  const [reports, setReports] = useState<HealthReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const supabase = createClient()
+
+  const fetchReports = async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('health_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setReports(data ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchReports() }, [user])
+
+  const deleteReport = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return
+    setDeleting(id)
+    const { error } = await supabase.from('health_reports').delete().eq('id', id)
+    if (!error) {
+      setReports(prev => prev.filter(r => r.id !== id))
+      addToast('تم حذف التقرير', 'success')
+    } else {
+      addToast('فشل في الحذف', 'error')
+    }
+    setDeleting(null)
+  }
+
+  const riskColor = (level: string) => {
+    if (level === 'مرتفع') return '#f87171'
+    if (level === 'متوسط') return '#fbbf24'
+    return '#34d399'
+  }
+
+  return (
+    <div style={styles.root} className="fade-up">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.pageTitle}>السجل الصحي</h1>
+          <p style={styles.pageSubtitle}>جميع تحليلاتك الصحية السابقة</p>
+        </div>
+        <Link href="/assessment" style={styles.newBtn}>+ جديد</Link>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60 }}>
+          <div style={styles.spinner} />
+        </div>
+      ) : reports.length === 0 ? (
+        <div style={styles.emptyState}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+          <h2 style={{ color: 'white', marginBottom: 8 }}>لا توجد تحليلات بعد</h2>
+          <p style={{ color: '#555', fontSize: 14, marginBottom: 24 }}>ابدأ أول تحليل صحي وقائي الآن</p>
+          <Link href="/assessment" style={styles.startBtn}>ابدأ التحليل</Link>
+        </div>
+      ) : (
+        <>
+          <div style={{ color: '#555', fontSize: 12, marginBottom: 16 }}>
+            {reports.length} تحليل مسجّل
+          </div>
+
+          {reports.map((r, i) => {
+            const isExpanded = expanded === r.id
+            const color = riskColor(r.risk_level)
+
+            return (
+              <div key={r.id} style={styles.reportCard} className={i === 0 ? 'fade-up' : ''}>
+                {/* Card Header */}
+                <div style={styles.cardHeader} onClick={() => setExpanded(isExpanded ? null : r.id)}>
+                  <div style={{ ...styles.scoreBadge, borderColor: color }}>
+                    <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{r.risk_score}</span>
+                    <span style={{ fontSize: 9, color: '#555' }}>/100</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ color, fontWeight: 700, fontSize: 14 }}>
+                        {r.risk_level}
+                      </span>
+                      <span style={{ color: '#444', fontSize: 11 }}>·</span>
+                      <span style={{ color: '#666', fontSize: 12 }}>
+                        عمر {r.age} · BMI {r.bmi}
+                      </span>
+                    </div>
+                    <div style={{ color: '#444', fontSize: 11, marginTop: 4 }}>
+                      {formatDate(r.created_at)}
+                    </div>
+                  </div>
+                  <div style={{ color: '#555', fontSize: 18, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>
+                    ⌄
+                  </div>
+                </div>
+
+                {/* Expanded */}
+                {isExpanded && (
+                  <div style={styles.expanded}>
+                    {/* Quick Stats */}
+                    <div style={styles.quickStats}>
+                      {[
+                        { label: 'الطول', val: `${r.height} سم` },
+                        { label: 'الوزن', val: `${r.weight} كجم` },
+                        { label: 'الجنس', val: r.gender === 'male' ? 'ذكر' : 'أنثى' },
+                      ].map((s, i) => (
+                        <div key={i} style={styles.quickStat}>
+                          <span style={{ color: '#555', fontSize: 11 }}>{s.label}</span>
+                          <span style={{ color: '#ccc', fontWeight: 600, fontSize: 14 }}>{s.val}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* AI Insight */}
+                    {r.ai_insight && (
+                      <div style={styles.aiBox}>
+                        <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>✦ تحليل AI</div>
+                        <p style={{ color: '#999', fontSize: 13, lineHeight: 1.8 }}>{r.ai_insight}</p>
+                      </div>
+                    )}
+
+                    {/* Screenings */}
+                    {r.screenings && Array.isArray(r.screenings) && r.screenings.length > 0 && (
+                      <div style={styles.listBox}>
+                        <div style={styles.listTitle}>🧪 الفحوصات الموصى بها</div>
+                        {(r.screenings as Array<{ name: string; freq: string; urgency: string }>).map((s, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1a1a2a', fontSize: 13 }}>
+                            <span style={{ color: '#ccc' }}>{s.name}</span>
+                            <span style={{ color: '#555', fontSize: 11 }}>{s.freq}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Delete */}
+                    <button
+                      style={styles.deleteBtn}
+                      onClick={() => deleteReport(r.id)}
+                      disabled={deleting === r.id}
+                    >
+                      {deleting === r.id ? 'جاري الحذف...' : '🗑 حذف هذا التقرير'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </>
+      )}
+    </div>
+  )
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('ar-EG', {
+    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  root: { maxWidth: 640, margin: '0 auto' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  pageTitle: { fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' },
+  pageSubtitle: { color: '#555', fontSize: 13, marginTop: 4 },
+  newBtn: {
+    background: 'linear-gradient(135deg, #059669, #34d399)', color: '#001a0e',
+    padding: '10px 18px', borderRadius: 12, fontWeight: 700, fontSize: 13,
+    textDecoration: 'none', whiteSpace: 'nowrap',
+  },
+  spinner: {
+    display: 'inline-block', width: 28, height: 28,
+    border: '2.5px solid #1a1a2a', borderTopColor: '#34d399',
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+  },
+  emptyState: { textAlign: 'center', padding: '60px 20px' },
+  startBtn: {
+    background: 'linear-gradient(135deg, #059669, #34d399)', color: '#001a0e',
+    padding: '12px 24px', borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: 'none',
+  },
+  reportCard: {
+    background: '#0d0d14', border: '1px solid #1a1a2a',
+    borderRadius: 16, marginBottom: 10, overflow: 'hidden',
+  },
+  cardHeader: {
+    display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px',
+    cursor: 'pointer', userSelect: 'none',
+  },
+  scoreBadge: {
+    width: 52, height: 52, borderRadius: '50%', border: '2.5px solid',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  expanded: {
+    padding: '0 18px 18px', borderTop: '1px solid #1a1a2a',
+    paddingTop: 16,
+  },
+  quickStats: {
+    display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap',
+  },
+  quickStat: {
+    display: 'flex', flexDirection: 'column', gap: 2,
+  },
+  aiBox: {
+    background: '#0d0d1a', border: '1px solid #1e1e3a',
+    borderRadius: 12, padding: '14px', marginBottom: 12,
+  },
+  listBox: {
+    background: '#0d0d14', border: '1px solid #1a1a2a',
+    borderRadius: 12, padding: '14px', marginBottom: 12,
+  },
+  listTitle: { fontWeight: 700, fontSize: 13, color: '#888', marginBottom: 10 },
+  deleteBtn: {
+    background: 'transparent', border: '1px solid #2d0a0a', borderRadius: 10,
+    color: '#f8717188', fontSize: 12, padding: '8px 14px', cursor: 'pointer',
+    fontFamily: 'inherit', marginTop: 6, transition: 'all 0.15s',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(app)/assessment/page.tsx
+================================================================================
+
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useToast } from '@/hooks/useToast'
+import { ToastContainer } from '@/components/ui/Toast'
+import FamilyHistoryBuilder from '@/components/family/FamilyHistoryBuilder'
+import RecommendationCard from '@/components/recommendations/RecommendationCard'
+import { calculateBMI, getBMICategory } from '@/lib/risk-engine'
+import type { HealthFormData, FamilyMember, Screening } from '@/types'
+
+const STEPS = ['بياناتك', 'العائلة', 'عاداتك', 'نتيجتك']
+
+const initialForm: HealthFormData = {
+  age: '', gender: '', height: '', weight: '',
+  familyMembers: [], noFamilyHistory: false,
+  habits: { smoking: '', exercise: '', sleep: '', diet: '', stress: '', alcohol: '', waterIntake: '' },
+  waistCircumference: '',
+}
+
+interface ReportData {
+  id?: string
+  bmi: number
+  bmiMeta: { label: string; color: string }
+  riskScore: number
+  riskLevel: string
+  riskColor: string
+  riskBg: string
+  riskDescription: string
+  screenings: Screening[]
+  lifestyleTips: string[]
+  positives: string[]
+  riskBreakdown: Array<{ category: string; score: number; maxScore: number; details: string }>
+  aiInsight: string
+  savedToDb: boolean
+}
+
+export default function AssessmentPage() {
+  const [step, setStep] = useState(0)
+  const [form, setForm] = useState<HealthFormData>(initialForm)
+  const [loading, setLoading] = useState(false)
+  const [report, setReport] = useState<ReportData | null>(null)
+  const { toasts, addToast, removeToast } = useToast()
+  const router = useRouter()
+
+  const bmi = calculateBMI(form.height, form.weight)
+  const bmiMeta = bmi ? getBMICategory(bmi) : null
+
+  const isStep0Valid = form.age && form.gender && form.height && form.weight &&
+    parseInt(form.age) > 0 && parseFloat(form.height) > 0 && parseFloat(form.weight) > 0
+  const isStep1Valid = form.noFamilyHistory || form.familyMembers.some(m => m.relative && m.disease)
+  const isStep2Valid = form.habits.smoking && form.habits.exercise &&
+    form.habits.sleep && form.habits.diet && form.habits.stress
+
+  const submit = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/analyze-health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setReport(data.report)
+      setStep(3)
+      if (data.report.savedToDb) addToast('تم حفظ تقريرك في سجلك الصحي ✓', 'success')
+    } catch {
+      addToast('حدث خطأ أثناء التحليل، حاول مرة أخرى', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const urgencyColor = (u: string) =>
+    u === 'عاجل' ? '#f87171' : u === 'مهم' ? '#fbbf24' : '#6ee7b7'
+
+  return (
+    <div style={S.root}>
+      <style>{css}</style>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Progress bar */}
+      {step < 3 && (
+        <div style={S.progressWrap} className="fade-up">
+          <div style={S.progressBar}>
+            <div style={{ ...S.progressFill, width: `${((step + 1) / 4) * 100}%` }} />
+          </div>
+          <div style={S.stepRow}>
+            {STEPS.map((s, i) => (
+              <span key={i} style={{ ...S.stepLabel, color: i === step ? '#34d399' : i < step ? '#34d39966' : '#333' }}>
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 0: Basics ── */}
+      {step === 0 && (
+        <div className="fade-up">
+          <div style={S.stepHeader}>
+            <h2 style={S.title}>بياناتك الأساسية</h2>
+            <p style={S.desc}>نحتاجها لحساب مؤشر الكتلة وتقدير المخاطر الأولية</p>
+          </div>
+
+          <div style={S.twoCol}>
+            <Field label="العمر (سنة)">
+              <input style={S.input} type="number" placeholder="30" min="1" max="120"
+                value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+            </Field>
+            <Field label="الطول (سم)">
+              <input style={S.input} type="number" placeholder="170" min="100" max="250"
+                value={form.height} onChange={e => setForm({ ...form, height: e.target.value })} />
+            </Field>
+          </div>
+
+          <div style={S.twoCol}>
+            <Field label="الوزن (كجم)">
+              <input style={S.input} type="number" placeholder="70" min="20" max="300"
+                value={form.weight} onChange={e => setForm({ ...form, weight: e.target.value })} />
+            </Field>
+            <Field label="محيط الخصر (سم) — اختياري">
+              <input style={S.input} type="number" placeholder="85"
+                value={form.waistCircumference ?? ''} onChange={e => setForm({ ...form, waistCircumference: e.target.value })} />
+            </Field>
+          </div>
+
+          {/* BMI live */}
+          {bmi && bmiMeta && (
+            <div style={{ ...S.bmiCard, borderColor: bmiMeta.color + '44' }} className="fade-up">
+              <div>
+                <div style={{ color: '#666', fontSize: 11, marginBottom: 2 }}>مؤشر كتلة الجسم</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: bmiMeta.color, lineHeight: 1 }}>{bmi}</div>
+              </div>
+              <div style={{ ...S.bmiTag, background: bmiMeta.color + '18', color: bmiMeta.color }}>
+                {bmiMeta.label}
+              </div>
+              <div style={S.bmiScale}>
+                {[
+                  { label: 'نقص', range: '<18.5', color: '#60a5fa' },
+                  { label: 'طبيعي', range: '18.5-25', color: '#34d399' },
+                  { label: 'زيادة', range: '25-30', color: '#fbbf24' },
+                  { label: 'سمنة', range: '>30', color: '#f87171' },
+                ].map((b, i) => (
+                  <div key={i} style={{ textAlign: 'center' }}>
+                    <div style={{ width: 24, height: 6, borderRadius: 3, background: b.color, margin: '0 auto 3px' }} />
+                    <div style={{ fontSize: 9, color: '#555' }}>{b.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gender */}
+          <Field label="الجنس">
+            <div style={{ display: 'flex', gap: 12 }}>
+              {[{ id: 'male', label: 'ذكر', icon: '♂' }, { id: 'female', label: 'أنثى', icon: '♀' }].map(g => (
+                <button key={g.id} className="chip-btn" onClick={() => setForm({ ...form, gender: g.id as 'male' | 'female' })}
+                  style={{
+                    flex: 1, padding: '15px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                    fontSize: 15, fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    background: form.gender === g.id ? '#052e16' : '#111118',
+                    border: `1.5px solid ${form.gender === g.id ? '#34d399' : '#2a2a3a'}`,
+                    color: form.gender === g.id ? '#34d399' : '#666',
+                  }}>
+                  <span style={{ fontSize: 24 }}>{g.icon}</span>
+                  <span>{g.label}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <button style={{ ...S.primaryBtn, opacity: isStep0Valid ? 1 : 0.35 }}
+            onClick={() => isStep0Valid && setStep(1)} disabled={!isStep0Valid}>
+            التالي — التاريخ العائلي ←
+          </button>
+        </div>
+      )}
+
+      {/* ── STEP 1: Family History ── */}
+      {step === 1 && (
+        <div className="fade-up">
+          <div style={S.stepHeader}>
+            <h2 style={S.title}>التاريخ الصحي العائلي</h2>
+            <p style={S.desc}>أضف أفراد العائلة المباشرة الذين أُصيبوا بأمراض مزمنة — هذا يؤثر كثيراً على دقة التحليل</p>
+          </div>
+
+          <FamilyHistoryBuilder
+            members={form.familyMembers}
+            noFamilyHistory={form.noFamilyHistory}
+            onChange={(members: FamilyMember[], noHistory: boolean) =>
+              setForm({ ...form, familyMembers: members, noFamilyHistory: noHistory })}
+          />
+
+          <div style={S.navRow}>
+            <button style={S.ghostBtn} onClick={() => setStep(0)}>← رجوع</button>
+            <button style={{ ...S.primaryBtn, flex: 2, opacity: isStep1Valid ? 1 : 0.35 }}
+              onClick={() => isStep1Valid && setStep(2)} disabled={!isStep1Valid}>
+              التالي — عاداتك اليومية ←
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 2: Habits ── */}
+      {step === 2 && (
+        <div className="fade-up">
+          <div style={S.stepHeader}>
+            <h2 style={S.title}>عاداتك اليومية</h2>
+            <p style={S.desc}>تؤثر بشكل كبير على حساب مخاطرك ودقة التوصيات</p>
+          </div>
+
+          <HabitQ title="التدخين" icon="🚬" options={[
+            { id: 'none', label: 'لا أدخن', desc: '' },
+            { id: 'ex', label: 'مدخن سابق', desc: '' },
+            { id: 'light', label: 'خفيف', desc: 'أقل من 10/يوم' },
+            { id: 'moderate', label: 'متوسط', desc: '10-20/يوم' },
+            { id: 'heavy', label: 'ثقيل', desc: 'أكثر من 20/يوم' },
+          ]} value={form.habits.smoking} onSelect={v => setForm({ ...form, habits: { ...form.habits, smoking: v } })} />
+
+          <HabitQ title="النشاط البدني" icon="🏃" options={[
+            { id: 'none', label: 'خامل', desc: 'لا رياضة إطلاقاً' },
+            { id: 'rarely', label: 'نادراً', desc: 'أقل من مرة/أسبوع' },
+            { id: 'moderate', label: 'متوسط', desc: '2-3 مرات/أسبوع' },
+            { id: 'frequent', label: 'جيد', desc: '4-5 مرات/أسبوع' },
+            { id: 'daily', label: 'يومياً', desc: 'كل يوم' },
+          ]} value={form.habits.exercise} onSelect={v => setForm({ ...form, habits: { ...form.habits, exercise: v } })} />
+
+          <HabitQ title="ساعات النوم" icon="😴" options={[
+            { id: 'very_low', label: 'أقل من 5', desc: 'خطر مرتفع' },
+            { id: 'low', label: '5-6 ساعات', desc: 'أقل من الكافي' },
+            { id: 'good', label: '7-8 ساعات', desc: 'مثالي ✓' },
+            { id: 'excess', label: 'أكثر من 9', desc: 'مفرط' },
+          ]} value={form.habits.sleep} onSelect={v => setForm({ ...form, habits: { ...form.habits, sleep: v } })} />
+
+          <HabitQ title="النظام الغذائي" icon="🥗" options={[
+            { id: 'poor', label: 'سيئ', desc: 'وجبات سريعة يومياً' },
+            { id: 'average', label: 'متوسط', desc: 'مختلط' },
+            { id: 'healthy', label: 'صحي', desc: 'متوازن ومتنوع' },
+          ]} value={form.habits.diet} onSelect={v => setForm({ ...form, habits: { ...form.habits, diet: v } })} />
+
+          <HabitQ title="مستوى التوتر" icon="🧠" options={[
+            { id: 'low', label: 'منخفض', desc: 'هادئ ومستقر' },
+            { id: 'moderate', label: 'متوسط', desc: 'أحياناً' },
+            { id: 'high', label: 'مرتفع', desc: 'معظم الوقت' },
+            { id: 'very_high', label: 'مزمن', desc: 'دائماً' },
+          ]} value={form.habits.stress} onSelect={v => setForm({ ...form, habits: { ...form.habits, stress: v } })} />
+
+          <HabitQ title="شرب الماء" icon="💧" options={[
+            { id: 'low', label: 'قليل', desc: 'أقل من لتر' },
+            { id: 'moderate', label: '1-2 لتر', desc: 'متوسط' },
+            { id: 'good', label: '2+ لتر', desc: 'كافٍ ✓' },
+          ]} value={form.habits.waterIntake} onSelect={v => setForm({ ...form, habits: { ...form.habits, waterIntake: v } })} />
+
+          <div style={S.navRow}>
+            <button style={S.ghostBtn} onClick={() => setStep(1)}>← رجوع</button>
+            <button
+              style={{ ...S.primaryBtn, flex: 2, opacity: isStep2Valid && !loading ? 1 : 0.35 }}
+              onClick={isStep2Valid && !loading ? submit : undefined}
+              disabled={!isStep2Valid || loading}>
+              {loading
+                ? <span style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                    <span style={S.spinner} /> جاري التحليل بالذكاء الاصطناعي...
+                  </span>
+                : '✦ تحليل حالتي الصحية'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: Report ── */}
+      {step === 3 && report && (
+        <div>
+          {/* Score Card */}
+          <div style={{ ...S.scoreCard, background: report.riskBg, borderColor: report.riskColor + '44' }}
+            className="fade-up score-animate">
+            <div style={{ ...S.scoreRing, borderColor: report.riskColor }}>
+              <span style={{ fontSize: 38, fontWeight: 900, color: report.riskColor, lineHeight: 1, letterSpacing: '-2px' }}>
+                {report.riskScore}
+              </span>
+              <span style={{ fontSize: 12, color: '#555' }}>/100</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: report.riskColor, fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+                مستوى المخاطرة: {report.riskLevel}
+              </div>
+              <div style={{ color: '#888', fontSize: 13, lineHeight: 1.7 }}>{report.riskDescription}</div>
+              <div style={{ color: '#555', fontSize: 12, marginTop: 8 }}>
+                BMI: {report.bmi} — {report.bmiMeta.label}
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown */}
+          <div style={S.card} className="fade-up fade-up-d1">
+            <div style={S.cardTitle}>📊 تفصيل عوامل الخطر</div>
+            {report.riskBreakdown.map((b, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ color: '#bbb', fontSize: 12 }}>{b.category}</span>
+                  <span style={{ color: b.score === 0 ? '#34d399' : b.score > b.maxScore * 0.6 ? '#f87171' : '#fbbf24', fontSize: 12, fontWeight: 700 }}>
+                    {b.score}/{b.maxScore}
+                  </span>
+                </div>
+                <div style={{ height: 6, background: '#1a1a2a', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 3, transition: 'width 1s ease',
+                    width: `${(b.score / b.maxScore) * 100}%`,
+                    background: b.score === 0 ? '#34d399' : b.score > b.maxScore * 0.6 ? '#f87171' : '#fbbf24',
+                  }} />
+                </div>
+                <div style={{ color: '#444', fontSize: 11, marginTop: 2 }}>{b.details}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* AI Insight */}
+          <div style={S.aiCard} className="fade-up fade-up-d1">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ color: '#818cf8' }}>✦</span>
+              <span style={{ color: '#818cf8', fontWeight: 700, fontSize: 13 }}>تحليل AI الوقائي — Claude</span>
+            </div>
+            <p style={{ color: '#bbb', fontSize: 14, lineHeight: 1.95, margin: 0 }}>{report.aiInsight}</p>
+          </div>
+
+          {/* Screenings */}
+          <div className="fade-up fade-up-d2">
+            <div style={{ ...S.cardTitle, marginBottom: 14, paddingTop: 4 }}>
+              🧪 الفحوصات الوقائية الموصى بها ({report.screenings.length})
+            </div>
+            {/* Urgent first */}
+            {(['عاجل', 'مهم', 'روتيني'] as const).map(urgency => {
+              const filtered = report.screenings.filter(s => s.urgency === urgency)
+              if (!filtered.length) return null
+              return (
+                <div key={urgency}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: urgencyColor(urgency),
+                    marginBottom: 8, marginTop: 12, display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: urgencyColor(urgency), display: 'inline-block' }} />
+                    {urgency} ({filtered.length})
+                  </div>
+                  {filtered.map((s, i) => (
+                    <RecommendationCard key={i} screening={s} index={i} />
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Lifestyle Tips */}
+          {report.lifestyleTips.length > 0 && (
+            <div style={S.card} className="fade-up fade-up-d3">
+              <div style={S.cardTitle}>💡 تغييرات تصنع فارقاً حقيقياً</div>
+              {report.lifestyleTips.map((tip, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%', background: '#2d1a00',
+                    color: '#fbbf24', fontSize: 11, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', flexShrink: 0, fontWeight: 700, marginTop: 2,
+                  }}>{i + 1}</div>
+                  <p style={{ color: '#aaa', fontSize: 13, lineHeight: 1.8, margin: 0 }}>{tip}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Positives */}
+          {report.positives.length > 0 && (
+            <div style={{ ...S.card, borderColor: '#34d39922' }} className="fade-up fade-up-d3">
+              <div style={S.cardTitle}>✅ نقاط قوة صحية تمتلكها</div>
+              {report.positives.map((p, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#34d399', fontSize: 14, flexShrink: 0, marginTop: 2 }}>✓</span>
+                  <p style={{ color: '#7dd3b0', fontSize: 13, lineHeight: 1.8, margin: 0 }}>{p}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={S.disclaimer}>
+            هذا التحليل توعوي وتثقيفي مبني على الإرشادات الطبية المعتمدة ولا يُغني عن استشارة طبيب مختص.
+          </div>
+
+          <div style={S.navRow}>
+            <button style={S.ghostBtn} onClick={() => { setStep(0); setForm(initialForm); setReport(null) }}>
+              تحليل جديد
+            </button>
+            <button style={S.primaryBtn} onClick={() => router.push('/dashboard')}>
+              لوحة التحكم →
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Sub-components ───────────────────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 16, flex: 1 }}>
+      <label style={{ display: 'block', fontSize: 11, color: '#555', marginBottom: 6, fontWeight: 600, letterSpacing: '0.3px' }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function HabitQ({ title, icon, options, value, onSelect }: {
+  title: string
+  icon: string
+  options: { id: string; label: string; desc: string }[]
+  value: string
+  onSelect: (v: string) => void
+}) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+        <span style={{ color: '#ddd', fontWeight: 600, fontSize: 14 }}>{title}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map(o => (
+          <button key={o.id} className="chip-btn" onClick={() => onSelect(o.id)}
+            style={{
+              border: 'none', padding: '10px 16px', borderRadius: 100, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              background: value === o.id ? '#052e16' : '#111118',
+              color: value === o.id ? '#34d399' : '#666',
+              outline: value === o.id ? '1.5px solid #34d399' : '1.5px solid #2a2a3a',
+            }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{o.label}</span>
+            {o.desc && <span style={{ fontSize: 10, opacity: 0.7 }}>{o.desc}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Styles ───────────────────────────────────────────────────
+const css = `
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  @keyframes scoreCount { from { opacity:0; transform:scale(0.7) } to { opacity:1; transform:scale(1) } }
+  .fade-up { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both }
+  .fade-up-d1 { animation-delay:.08s } .fade-up-d2 { animation-delay:.16s } .fade-up-d3 { animation-delay:.24s }
+  .chip-btn { transition: all .15s ease }
+  .chip-btn:hover { opacity:.85; transform:scale(.97) }
+  .score-animate { animation: scoreCount 0.6s cubic-bezier(0.22,1,0.36,1) both; animation-delay:.2s }
+  input:focus { outline: none !important; border-color: #34d399 !important }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none }
+  input[type=number] { -moz-appearance: textfield }
+  select:focus { outline: none; border-color: #34d399 }
+`
+
+const S: Record<string, React.CSSProperties> = {
+  root: { maxWidth: 580, margin: '0 auto', paddingBottom: 40 },
+  progressWrap: { marginBottom: 28 },
+  progressBar: { height: 3, background: '#1a1a2a', borderRadius: 2, marginBottom: 10, overflow: 'hidden' },
+  progressFill: { height: '100%', background: 'linear-gradient(90deg,#059669,#34d399)', borderRadius: 2, transition: 'width 0.4s ease' },
+  stepRow: { display: 'flex', justifyContent: 'space-between' },
+  stepLabel: { fontSize: 11, fontWeight: 600, transition: 'color 0.3s' },
+  stepHeader: { marginBottom: 24 },
+  title: { fontSize: 22, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.5px', color: 'white' },
+  desc: { color: '#555', fontSize: 13, lineHeight: 1.7 },
+  twoCol: { display: 'flex', gap: 12 },
+  input: {
+    width: '100%', padding: '13px 14px', borderRadius: 12,
+    border: '1.5px solid #2a2a3a', background: '#111118', color: 'white',
+    fontSize: 15, fontFamily: 'inherit', transition: 'border-color 0.2s', boxSizing: 'border-box',
+  },
+  bmiCard: {
+    display: 'flex', alignItems: 'center', gap: 14, background: '#0d0d14',
+    border: '1px solid', borderRadius: 14, padding: '14px 18px', marginBottom: 16, flexWrap: 'wrap',
+  },
+  bmiTag: {
+    padding: '6px 14px', borderRadius: 100, fontSize: 13, fontWeight: 700,
+  },
+  bmiScale: { display: 'flex', gap: 12, marginRight: 'auto' },
+  navRow: { display: 'flex', gap: 12, marginTop: 24 },
+  primaryBtn: {
+    flex: 1, padding: '15px 24px', border: 'none', borderRadius: 14,
+    background: 'linear-gradient(135deg,#059669,#34d399)', color: '#001a0e',
+    fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit',
+    transition: 'opacity 0.2s', marginTop: 4,
+  },
+  ghostBtn: {
+    flex: 1, padding: '14px 24px', border: '1.5px solid #2a2a3a', borderRadius: 14,
+    background: 'transparent', color: '#666', fontWeight: 600, fontSize: 14,
+    cursor: 'pointer', fontFamily: 'inherit', marginTop: 4,
+  },
+  spinner: {
+    display: 'inline-block', width: 16, height: 16,
+    border: '2px solid rgba(0,26,14,0.4)', borderTopColor: '#001a0e',
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+  },
+  scoreCard: {
+    border: '1px solid', borderRadius: 20, padding: '24px 20px',
+    marginBottom: 12, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+  },
+  scoreRing: {
+    width: 90, height: 90, borderRadius: '50%', border: '4px solid',
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', flexShrink: 0,
+  },
+  card: {
+    background: '#0d0d14', border: '1px solid #1a1a2a',
+    borderRadius: 16, padding: '18px 20px', marginBottom: 12,
+  },
+  cardTitle: { fontWeight: 700, fontSize: 13, color: '#888', marginBottom: 14 },
+  aiCard: {
+    background: '#0d0d1a', border: '1px solid #1e1e3a',
+    borderRadius: 16, padding: '18px 20px', marginBottom: 12,
+  },
+  disclaimer: {
+    background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 12,
+    padding: 14, color: '#333', fontSize: 11, lineHeight: 1.7,
+    textAlign: 'center', margin: '16px 0',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(app)/lab/page.tsx
+================================================================================
+
+'use client'
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/useToast'
+import { ToastContainer } from '@/components/ui/Toast'
+import type { LabReport } from '@/types'
+
+export default function LabPage() {
+  const { user } = useAuth()
+  const { toasts, addToast, removeToast } = useToast()
+  const [labReports, setLabReports] = useState<LabReport[]>([])
+  const [loadingReports, setLoadingReports] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [selectedReport, setSelectedReport] = useState<LabReport | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
+
+  const fetchReports = async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('lab_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setLabReports(data ?? [])
+    setLoadingReports(false)
+  }
+
+  useEffect(() => { fetchReports() }, [user])
+
+  const handleFile = async (file: File) => {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      addToast('الملفات المسموح بها: PDF, JPG, PNG', 'error')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      addToast('حجم الملف لا يتجاوز 10 ميجابايت', 'error')
+      return
+    }
+
+    setUploading(true)
+    addToast('جاري رفع وتحليل الملف...', 'info')
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/analyze-lab', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) throw new Error('Upload failed')
+
+      const data = await res.json()
+      if (data.success) {
+        addToast('تم تحليل التقرير بنجاح ✓', 'success')
+        fetchReports()
+      } else {
+        addToast('فشل في تحليل الملف', 'error')
+      }
+    } catch {
+      addToast('حدث خطأ أثناء الرفع', 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }
+
+  return (
+    <div style={styles.root} className="fade-up">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>التحاليل المخبرية</h1>
+          <p style={styles.pageSubtitle}>ارفع تحليلك وسيقرأه الذكاء الاصطناعي ويشرحه لك</p>
+        </div>
+      </div>
+
+      {/* Upload Zone */}
+      <div
+        style={{
+          ...styles.uploadZone,
+          borderColor: dragOver ? '#34d399' : uploading ? '#818cf8' : '#2a2a3a',
+          background: dragOver ? '#052e1610' : uploading ? '#1e1e3a10' : '#0d0d14',
+        }}
+        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => !uploading && fileRef.current?.click()}
+        className="fade-up"
+      >
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          style={{ display: 'none' }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+        />
+
+        {uploading ? (
+          <>
+            <div style={{ ...styles.spinner, width: 32, height: 32, borderWidth: 3, marginBottom: 16 }} />
+            <div style={{ color: '#818cf8', fontWeight: 600 }}>جاري التحليل بالذكاء الاصطناعي...</div>
+            <div style={{ color: '#555', fontSize: 12, marginTop: 6 }}>قد يستغرق من 15-30 ثانية</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🧪</div>
+            <div style={{ color: '#ccc', fontWeight: 600, marginBottom: 6 }}>
+              {dragOver ? 'أفلت الملف هنا' : 'اسحب ملفك هنا أو انقر للاختيار'}
+            </div>
+            <div style={{ color: '#555', fontSize: 12 }}>PDF, JPG, PNG — حد أقصى 10 ميجابايت</div>
+            <div style={{ marginTop: 16, padding: '8px 20px', background: '#1a1a2a', borderRadius: 100, fontSize: 12, color: '#666' }}>
+              اختر ملف
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* How it works */}
+      <div style={styles.howItWorks} className="fade-up fade-up-d1">
+        {[
+          { icon: '📤', label: 'ارفع التحليل' },
+          { icon: '🤖', label: 'Claude يقرأه' },
+          { icon: '📋', label: 'تحليل مبسط' },
+          { icon: '⚠️', label: 'تنبيه إذا لزم' },
+        ].map((s, i) => (
+          <div key={i} style={styles.step}>
+            <span style={{ fontSize: 22 }}>{s.icon}</span>
+            <span style={{ fontSize: 11, color: '#555', marginTop: 4 }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Reports List */}
+      {loadingReports ? (
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <div style={styles.spinner} />
+        </div>
+      ) : labReports.length === 0 ? (
+        <div style={styles.emptyState}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+          <div style={{ color: '#555' }}>لا توجد تحاليل مرفوعة بعد</div>
+        </div>
+      ) : (
+        <div className="fade-up fade-up-d2">
+          <div style={styles.sectionTitle}>تحاليلك المرفوعة ({labReports.length})</div>
+          {labReports.map(lr => (
+            <div
+              key={lr.id}
+              style={{
+                ...styles.reportCard,
+                border: selectedReport?.id === lr.id ? '1px solid #34d39944' : '1px solid #1a1a2a',
+                cursor: 'pointer',
+              }}
+              onClick={() => setSelectedReport(selectedReport?.id === lr.id ? null : lr)}
+            >
+              <div style={styles.reportCardHeader}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: '#ccc', fontWeight: 500, fontSize: 14 }}>
+                    {getFileIcon(lr.file_type)} {lr.file_name}
+                  </div>
+                  <div style={{ color: '#444', fontSize: 11, marginTop: 4 }}>
+                    {formatDate(lr.created_at)}
+                    {lr.file_size && ` · ${(lr.file_size / 1024).toFixed(0)} KB`}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {lr.status === 'processing' && (
+                    <span style={{ ...styles.tag, background: '#1e1e3a', color: '#818cf8' }}>⏳ جاري التحليل</span>
+                  )}
+                  {lr.urgent_flag && (
+                    <span style={{ ...styles.tag, background: '#2d0a0a', color: '#f87171' }}>🚨 عاجل</span>
+                  )}
+                  {lr.has_abnormal_values && !lr.urgent_flag && (
+                    <span style={{ ...styles.tag, background: '#2d1a00', color: '#fbbf24' }}>⚠ غير طبيعي</span>
+                  )}
+                  {!lr.has_abnormal_values && lr.status === 'done' && (
+                    <span style={{ ...styles.tag, background: '#052e16', color: '#34d399' }}>✓ طبيعي</span>
+                  )}
+                </div>
+              </div>
+
+              {lr.summary && (
+                <div style={{ color: '#888', fontSize: 13, marginTop: 10, lineHeight: 1.6 }}>
+                  {lr.summary}
+                </div>
+              )}
+
+              {selectedReport?.id === lr.id && lr.ai_analysis && (
+                <div style={styles.expandedAnalysis}>
+                  <div style={{ color: '#818cf8', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
+                    ✦ التحليل التفصيلي
+                  </div>
+                  <p style={{ color: '#bbb', fontSize: 13, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
+                    {lr.ai_analysis}
+                  </p>
+                  <div style={{ marginTop: 16, padding: '10px 14px', background: '#0d0d14', borderRadius: 10, fontSize: 11, color: '#444', lineHeight: 1.7 }}>
+                    هذا التحليل توعوي ولا يُغني عن استشارة طبيب مختص.
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function getFileIcon(type: string): string {
+  if (type === 'application/pdf') return '📄'
+  if (type.startsWith('image/')) return '🖼'
+  return '📁'
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('ar-EG', {
+    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  root: { maxWidth: 640, margin: '0 auto' },
+  pageHeader: { marginBottom: 24 },
+  pageTitle: { fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' },
+  pageSubtitle: { color: '#555', fontSize: 13, marginTop: 4 },
+  uploadZone: {
+    border: '2px dashed', borderRadius: 20, padding: '40px 24px',
+    textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s',
+    marginBottom: 16,
+  },
+  howItWorks: {
+    display: 'flex', justifyContent: 'space-around', padding: '14px 0',
+    marginBottom: 24, borderTop: '1px solid #1a1a2a', borderBottom: '1px solid #1a1a2a',
+  },
+  step: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 },
+  sectionTitle: { fontWeight: 700, fontSize: 13, color: '#888', marginBottom: 12 },
+  emptyState: { textAlign: 'center', padding: '40px 0', color: '#555' },
+  reportCard: {
+    background: '#0d0d14', borderRadius: 16, padding: 18,
+    marginBottom: 10, transition: 'border-color 0.2s',
+  },
+  reportCardHeader: { display: 'flex', alignItems: 'flex-start', gap: 12 },
+  tag: { fontSize: 10, padding: '3px 8px', borderRadius: 100, fontWeight: 600 },
+  expandedAnalysis: {
+    marginTop: 14, paddingTop: 14, borderTop: '1px solid #1a1a2a',
+  },
+  spinner: {
+    display: 'inline-block', width: 24, height: 24,
+    border: '2px solid #1a1a2a', borderTopColor: '#34d399',
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/app/(app)/dashboard/page.tsx
+================================================================================
+
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import TrendChart from '@/components/dashboard/TrendChart'
+import Link from 'next/link'
+import type { HealthReport, LabReport, TrendPoint } from '@/types'
+
+export default function DashboardPage() {
+  const { user } = useAuth()
+  const [reports, setReports] = useState<HealthReport[]>([])
+  const [labReports, setLabReports] = useState<LabReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!user) return
+    const run = async () => {
+      const [{ data: hr }, { data: lr }] = await Promise.all([
+        supabase.from('health_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('lab_reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+      ])
+      setReports(hr ?? [])
+      setLabReports(lr ?? [])
+      setLoading(false)
+    }
+    run()
+  }, [user])
+
+  const latest = reports[0]
+  const riskHistory: TrendPoint[] = [...reports].reverse().map(r => ({ date: r.created_at, value: r.risk_score }))
+
+  const scoreImprovement = reports.length >= 2
+    ? reports[reports.length - 1].risk_score - reports[0].risk_score
+    : null
+
+  const rc = (level: string) =>
+    level === 'مرتفع' ? '#f87171' : level === 'متوسط' ? '#fbbf24' : '#34d399'
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+      <div style={S.spinner} />
+    </div>
+  )
+
+  if (reports.length === 0) return <EmptyState />
+
+  return (
+    <div style={S.root} className="fade-up">
+      <style>{css}</style>
+
+      {/* Header */}
+      <div style={S.header}>
+        <div>
+          <h1 style={S.pageTitle}>لوحة التحكم</h1>
+          <p style={S.pageSub}>مرحباً — هذا ملخص صحتك الوقائية</p>
+        </div>
+        <Link href="/assessment" style={S.newBtn}>+ تحليل جديد</Link>
+      </div>
+
+      {/* Stats grid */}
+      <div style={S.statsGrid}>
+        <StatCard
+          icon="🛡" label="آخر درجة خطر" value={String(latest.risk_score)}
+          sub={latest.risk_level} color={rc(latest.risk_level)} />
+        <StatCard
+          icon="📋" label="تحليلات صحية" value={String(reports.length)}
+          sub="إجمالي" color="#818cf8" />
+        <StatCard
+          icon="🧪" label="تحاليل مخبرية" value={String(labReports.length)}
+          sub="مرفوعة" color="#fbbf24" />
+        <StatCard
+          icon={scoreImprovement !== null && scoreImprovement < 0 ? '📉' : '📈'}
+          label="التغيّر"
+          value={scoreImprovement !== null ? (scoreImprovement > 0 ? `+${scoreImprovement}` : String(scoreImprovement)) : '—'}
+          sub={scoreImprovement !== null && scoreImprovement < 0 ? 'تحسّن 👏' : scoreImprovement !== null && scoreImprovement > 0 ? 'ارتفاع' : 'لا تغيير'}
+          color={scoreImprovement !== null && scoreImprovement < 0 ? '#34d399' : '#f87171'} />
+      </div>
+
+      {/* Risk Trend Chart */}
+      {riskHistory.length > 1 && (
+        <div style={S.card} className="fade-up fade-up-d1">
+          <div style={S.cardTitle}>📈 تطور درجة الخطر عبر الزمن</div>
+          <TrendChart
+            data={riskHistory}
+            color="#34d399"
+            label="درجة الخطر"
+            unit=""
+            height={90}
+          />
+        </div>
+      )}
+
+      {/* Latest Report */}
+      <div style={S.card} className="fade-up fade-up-d1">
+        <div style={S.cardTitle}>🛡 آخر تحليل صحي</div>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            border: `3px solid ${rc(latest.risk_level)}`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: rc(latest.risk_level), lineHeight: 1 }}>
+              {latest.risk_score}
+            </span>
+            <span style={{ fontSize: 10, color: '#555' }}>/100</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: rc(latest.risk_level), fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
+              {latest.risk_level}
+            </div>
+            {latest.ai_insight && (
+              <p style={{ color: '#888', fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+                {latest.ai_insight.slice(0, 200)}{latest.ai_insight.length > 200 ? '...' : ''}
+              </p>
+            )}
+            <div style={{ color: '#444', fontSize: 11, marginTop: 8 }}>{fmt(latest.created_at)}</div>
+          </div>
+        </div>
+
+        {/* Mini breakdown bars */}
+        {latest.risk_breakdown && Array.isArray(latest.risk_breakdown) && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #1a1a2a' }}>
+            <div style={{ color: '#555', fontSize: 11, marginBottom: 10, fontWeight: 600 }}>تفصيل عوامل الخطر</div>
+            {(latest.risk_breakdown as Array<{ category: string; score: number; maxScore: number }>)
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 5)
+              .map((b, i) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ color: '#888', fontSize: 11 }}>{b.category}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: b.score === 0 ? '#34d399' : b.score > b.maxScore * 0.6 ? '#f87171' : '#fbbf24' }}>
+                    {b.score}/{b.maxScore}
+                  </span>
+                </div>
+                <div style={{ height: 4, background: '#1a1a2a', borderRadius: 2 }}>
+                  <div style={{
+                    height: '100%', borderRadius: 2,
+                    width: `${(b.score / b.maxScore) * 100}%`,
+                    background: b.score === 0 ? '#34d399' : b.score > b.maxScore * 0.6 ? '#f87171' : '#fbbf24',
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lab reports */}
+      {labReports.length > 0 && (
+        <div style={S.card} className="fade-up fade-up-d2">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={S.cardTitle}>🧪 آخر التحاليل المخبرية</div>
+            <Link href="/lab" style={{ color: '#34d399', fontSize: 12 }}>عرض الكل →</Link>
+          </div>
+          {labReports.slice(0, 3).map(lr => (
+            <div key={lr.id} style={S.labRow}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: '#ccc', fontSize: 13, fontWeight: 500 }}>{lr.file_name}</div>
+                {lr.summary && <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{lr.summary.slice(0, 80)}</div>}
+              </div>
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                {lr.urgent_flag && <Tag color="#f87171" bg="#2d0a0a">🚨 عاجل</Tag>}
+                {lr.has_abnormal_values && !lr.urgent_flag && <Tag color="#fbbf24" bg="#2d1a00">⚠ غير طبيعي</Tag>}
+                {!lr.has_abnormal_values && lr.status === 'done' && <Tag color="#34d399" bg="#052e16">✓ طبيعي</Tag>}
+                {lr.status === 'processing' && <Tag color="#818cf8" bg="#1e1e3a">⏳</Tag>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div style={S.card} className="fade-up fade-up-d3">
+        <div style={S.cardTitle}>📅 التايملاين الصحي</div>
+        {reports.slice(0, 6).map((r, i) => (
+          <div key={r.id} style={{ display: 'flex', gap: 12, paddingBottom: 14, position: 'relative' }}>
+            {i < Math.min(reports.length - 1, 5) && (
+              <div style={{
+                position: 'absolute', right: 4, top: 14, bottom: 0,
+                width: 1, background: '#1a1a2a',
+              }} />
+            )}
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+              background: rc(r.risk_level), marginTop: 4,
+            }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#ccc', fontSize: 13, fontWeight: 500 }}>
+                  تحليل صحي — <span style={{ color: rc(r.risk_level) }}>{r.risk_level}</span>
+                </span>
+                <span style={{ color: rc(r.risk_level), fontWeight: 800, fontSize: 15 }}>{r.risk_score}</span>
+              </div>
+              <div style={{ color: '#444', fontSize: 11, marginTop: 2 }}>{fmt(r.created_at)}</div>
+            </div>
+          </div>
+        ))}
+        {reports.length > 6 && (
+          <Link href="/history" style={{ color: '#34d399', fontSize: 12, display: 'block', textAlign: 'center', marginTop: 4 }}>
+            عرض كل السجل ({reports.length} تحليل) →
+          </Link>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value, sub, color }: {
+  icon: string; label: string; value: string; sub?: string; color: string
+}) {
+  return (
+    <div style={S.statCard}>
+      <div style={{ fontSize: 20, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontSize: 26, fontWeight: 900, color, letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ color: '#555', fontSize: 10, marginTop: 3 }}>{sub}</div>}
+      <div style={{ color: '#333', fontSize: 11, marginTop: 6 }}>{label}</div>
+    </div>
+  )
+}
+
+function Tag({ children, color, bg }: { children: React.ReactNode; color: string; bg: string }) {
+  return (
+    <span style={{
+      fontSize: 10, padding: '3px 8px', borderRadius: 100, fontWeight: 600,
+      background: bg, color,
+    }}>{children}</span>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+      <style>{css}</style>
+      <div style={{ fontSize: 56, marginBottom: 16 }}>🛡</div>
+      <h2 style={{ color: 'white', marginBottom: 8, fontSize: 22, fontWeight: 700 }}>ابدأ رحلتك الوقائية</h2>
+      <p style={{ color: '#555', fontSize: 14, marginBottom: 28, lineHeight: 1.7 }}>
+        أجرِ أول تحليل صحي وقائي مجاناً<br />يستغرق 3 دقائق فقط
+      </p>
+      <Link href="/assessment" style={{
+        background: 'linear-gradient(135deg,#059669,#34d399)', color: '#001a0e',
+        padding: '15px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none',
+      }}>ابدأ التحليل المجاني</Link>
+    </div>
+  )
+}
+
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+const css = `
+  @keyframes fadeUp { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .fade-up { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both }
+  .fade-up-d1 { animation-delay:.08s } .fade-up-d2 { animation-delay:.16s } .fade-up-d3 { animation-delay:.24s }
+  a { text-decoration: none }
+`
+
+const S: Record<string, React.CSSProperties> = {
+  root: { maxWidth: 680, margin: '0 auto' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 },
+  pageTitle: { fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px', color: 'white', margin: 0 },
+  pageSub: { color: '#555', fontSize: 13, marginTop: 4 },
+  newBtn: {
+    background: 'linear-gradient(135deg,#059669,#34d399)', color: '#001a0e',
+    padding: '10px 20px', borderRadius: 12, fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap',
+  },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 12 },
+  statCard: {
+    background: '#0d0d14', border: '1px solid #1a1a2a',
+    borderRadius: 14, padding: '16px 18px',
+  },
+  card: {
+    background: '#0d0d14', border: '1px solid #1a1a2a',
+    borderRadius: 16, padding: '18px 20px', marginBottom: 12,
+  },
+  cardTitle: { fontWeight: 700, fontSize: 12, color: '#666', marginBottom: 14, letterSpacing: '0.3px' },
+  labRow: {
+    display: 'flex', alignItems: 'flex-start', gap: 10,
+    padding: '10px 0', borderBottom: '1px solid #1a1a2a',
+  },
+  spinner: {
+    display: 'inline-block', width: 32, height: 32,
+    border: '3px solid #1a1a2a', borderTopColor: '#34d399',
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+  },
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/lib/claude.ts
+================================================================================
+
+// SERVER ONLY — never import from client components
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
+const MODEL = 'claude-sonnet-4-20250514'
+
+async function callClaude(
+  messages: { role: 'user' | 'assistant'; content: unknown }[],
+  maxTokens = 1000
+): Promise<string> {
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages }),
+  })
+
+  if (!res.ok) throw new Error(`Claude API ${res.status}: ${await res.text()}`)
+
+  const data = await res.json()
+  return data.content?.find((b: { type: string; text?: string }) => b.type === 'text')?.text ?? ''
+}
+
+// ── Health Risk Analysis ──────────────────────────────────────
+export async function analyzeHealthRisk(params: {
+  age: number; gender: string; bmi: number; bmiLabel: string
+  smoking: string; exercise: string; sleep: string; diet: string; stress: string
+  familyHistory: string; riskScore: number; riskLevel: string; topRisks: string
+}): Promise<string> {
+  const smokingLabel: Record<string, string> = {
+    none: 'لا يدخن', ex: 'مدخن سابق', light: 'خفيف', moderate: 'متوسط', heavy: 'ثقيل'
+  }
+  const exerciseLabel: Record<string, string> = {
+    none: 'لا يتحرك', rarely: 'نادراً', moderate: '2-3 مرات/أسبوع', frequent: '4-5 مرات', daily: 'يومياً'
+  }
+  const sleepLabel: Record<string, string> = {
+    very_low: 'أقل من 5 ساعات', low: '5-6 ساعات', good: '7-8 ساعات', excess: 'أكثر من 9 ساعات'
+  }
+
+  const prompt = `أنت طبيب وقائي متخصص. بناءً على بيانات هذا المريض، قدم تحليلاً وقائياً دقيقاً باللغة العربية.
+
+البيانات:
+- العمر: ${params.age} سنة | الجنس: ${params.gender === 'male' ? 'ذكر' : 'أنثى'}
+- BMI: ${params.bmi} (${params.bmiLabel})
+- التدخين: ${smokingLabel[params.smoking] ?? params.smoking}
+- النشاط البدني: ${exerciseLabel[params.exercise] ?? params.exercise}
+- النوم: ${sleepLabel[params.sleep] ?? params.sleep}
+- التوتر: ${params.stress}
+- التغذية: ${params.diet}
+- التاريخ العائلي: ${params.familyHistory}
+- درجة المخاطرة: ${params.riskScore}/100 (${params.riskLevel})
+- أبرز عوامل الخطر: ${params.topRisks}
+
+اكتب 3 فقرات قصيرة جداً (2-3 جمل لكل فقرة):
+1. أبرز المخاطر الشخصية بناءً على بياناته تحديداً
+2. أولوية الفحوصات الوقائية له
+3. التغيير السلوكي الأكثر أثراً في حالته
+
+أسلوب: مباشر، طبي دقيق، شخصي. لا قوائم ولا رموز. لا مقدمات ولا خاتمات.`
+
+  return callClaude([{ role: 'user', content: prompt }], 700)
+}
+
+// ── Lab Analysis via Vision ───────────────────────────────────
+export async function analyzeLabReportVision(
+  base64: string,
+  mediaType: string
+): Promise<{ analysis: string; hasAbnormal: boolean; urgentFlag: boolean; summary: string }> {
+  const isPdf = mediaType === 'application/pdf'
+
+  const contentBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }
+
+  const prompt = `أنت طبيب وقائي متخصص في قراءة التحاليل الطبية. حلّل هذا التحليل بطريقة وقائية مبسطة للمريض باللغة العربية.
+
+قدم ردك بهذا التنسيق حرفياً (لا تغيّر العناوين):
+
+SUMMARY: [جملة واحدة تلخص نتيجة التحليل]
+HAS_ABNORMAL: [true أو false]
+URGENT: [true أو false — true فقط إذا كانت قيم تستدعي مراجعة طبيب خلال أسبوع]
+
+ANALYSIS:
+[فقرتان: الأولى تشرح القيم غير الطبيعية إن وجدت مع ذكر القيم المرجعية، والثانية النصيحة الوقائية. إذا كانت كل القيم طبيعية، اذكر ذلك بوضوح وأضف نصيحة وقائية عامة. إذا تعذّر قراءة الملف، اذكر ذلك صراحةً.]`
+
+  const raw = await callClaude(
+    [{ role: 'user', content: [contentBlock, { type: 'text', text: prompt }] }],
+    900
+  )
+
+  const summaryMatch = raw.match(/SUMMARY:\s*(.+)/i)
+  const hasAbnormalMatch = raw.match(/HAS_ABNORMAL:\s*(true|false)/i)
+  const urgentMatch = raw.match(/URGENT:\s*(true|false)/i)
+  const analysisMatch = raw.match(/ANALYSIS:\s*([\s\S]+)/i)
+
+  return {
+    summary: summaryMatch?.[1]?.trim() ?? 'تم تحليل التقرير',
+    hasAbnormal: hasAbnormalMatch?.[1]?.toLowerCase() === 'true',
+    urgentFlag: urgentMatch?.[1]?.toLowerCase() === 'true',
+    analysis: analysisMatch?.[1]?.trim() ?? raw,
+  }
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/lib/risk-engine.ts
+================================================================================
+
+// ============================================================
+// WIQAYA — Risk Engine (Server + Client Safe)
+// Pure functions, no side effects, no imports from Next/Supabase
+// ============================================================
+
+import type {
+  HealthFormData, FamilyMember, RiskBreakdown,
+  Screening, RelativeType, FamilyDegree
+} from '@/types'
+
+// ── BMI ─────────────────────────────────────────────────────
+export function calculateBMI(height: string, weight: string): number | null {
+  if (!height || !weight) return null
+  const h = parseFloat(height), w = parseFloat(weight)
+  if (!h || !w) return null
+  return parseFloat((w / Math.pow(h / 100, 2)).toFixed(1))
+}
+
+export function getBMICategory(bmi: number): { label: string; color: string } {
+  if (bmi < 18.5) return { label: 'نقص وزن', color: '#60a5fa' }
+  if (bmi < 25)   return { label: 'طبيعي',    color: '#34d399' }
+  if (bmi < 30)   return { label: 'زيادة وزن', color: '#fbbf24' }
+  if (bmi < 35)   return { label: 'سمنة درجة أولى', color: '#f97316' }
+  return             { label: 'سمنة مفرطة',   color: '#f87171' }
+}
+
+// ── Family degree ────────────────────────────────────────────
+export function getFamilyDegree(relative: RelativeType | string): FamilyDegree {
+  const firstDegree: RelativeType[] = ['father', 'mother', 'brother', 'sister', 'son', 'daughter']
+  return firstDegree.includes(relative as RelativeType) ? 'first' : 'second'
+}
+
+// ── Risk Score ───────────────────────────────────────────────
+export function calculateRiskScore(form: HealthFormData, bmi: number): {
+  total: number
+  breakdown: RiskBreakdown[]
+} {
+  const breakdown: RiskBreakdown[] = []
+
+  // 1. BMI
+  let bmiScore = 0
+  if (bmi >= 35) bmiScore = 28
+  else if (bmi >= 30) bmiScore = 22
+  else if (bmi >= 27) bmiScore = 15
+  else if (bmi >= 25) bmiScore = 10
+  else if (bmi < 18.5) bmiScore = 7
+  breakdown.push({
+    category: 'مؤشر الكتلة',
+    score: bmiScore, maxScore: 28,
+    details: `BMI ${bmi} — ${getBMICategory(bmi).label}`
+  })
+
+  // 2. Age
+  const age = parseInt(form.age)
+  let ageScore = 0
+  if (age > 65) ageScore = 25
+  else if (age > 55) ageScore = 20
+  else if (age > 45) ageScore = 14
+  else if (age > 35) ageScore = 8
+  else if (age > 25) ageScore = 3
+  breakdown.push({
+    category: 'العمر',
+    score: ageScore, maxScore: 25,
+    details: `${age} سنة`
+  })
+
+  // 3. Smoking
+  let smokingScore = 0
+  if (form.habits.smoking === 'heavy') smokingScore = 28
+  else if (form.habits.smoking === 'moderate') smokingScore = 20
+  else if (form.habits.smoking === 'light') smokingScore = 12
+  else if (form.habits.smoking === 'ex') smokingScore = 6
+  breakdown.push({
+    category: 'التدخين',
+    score: smokingScore, maxScore: 28,
+    details: form.habits.smoking === 'none' ? 'لا يدخن' :
+             form.habits.smoking === 'ex' ? 'مدخن سابق' :
+             form.habits.smoking === 'light' ? 'خفيف' :
+             form.habits.smoking === 'moderate' ? 'متوسط' : 'ثقيل'
+  })
+
+  // 4. Exercise
+  let exScore = 0
+  if (form.habits.exercise === 'none') exScore = 14
+  else if (form.habits.exercise === 'rarely') exScore = 9
+  else if (form.habits.exercise === 'moderate') exScore = 4
+  breakdown.push({
+    category: 'النشاط البدني',
+    score: exScore, maxScore: 14,
+    details: form.habits.exercise === 'none' ? 'خامل تماماً' :
+             form.habits.exercise === 'rarely' ? 'نادراً' :
+             form.habits.exercise === 'moderate' ? '2-3 مرات/أسبوع' :
+             form.habits.exercise === 'frequent' ? '4-5 مرات' : 'يومياً'
+  })
+
+  // 5. Sleep
+  let sleepScore = 0
+  if (form.habits.sleep === 'very_low') sleepScore = 12
+  else if (form.habits.sleep === 'low') sleepScore = 7
+  else if (form.habits.sleep === 'excess') sleepScore = 4
+  breakdown.push({
+    category: 'النوم',
+    score: sleepScore, maxScore: 12,
+    details: form.habits.sleep === 'very_low' ? 'أقل من 5 ساعات' :
+             form.habits.sleep === 'low' ? '5-6 ساعات' :
+             form.habits.sleep === 'good' ? '7-8 ساعات ✓' : 'أكثر من 9 ساعات'
+  })
+
+  // 6. Diet
+  let dietScore = 0
+  if (form.habits.diet === 'poor') dietScore = 14
+  else if (form.habits.diet === 'average') dietScore = 7
+  breakdown.push({
+    category: 'التغذية',
+    score: dietScore, maxScore: 14,
+    details: form.habits.diet === 'poor' ? 'وجبات سريعة يومياً' :
+             form.habits.diet === 'average' ? 'متوسط' : 'صحي ومتوازن ✓'
+  })
+
+  // 7. Stress
+  let stressScore = 0
+  if (form.habits.stress === 'very_high') stressScore = 13
+  else if (form.habits.stress === 'high') stressScore = 8
+  else if (form.habits.stress === 'moderate') stressScore = 3
+  breakdown.push({
+    category: 'التوتر',
+    score: stressScore, maxScore: 13,
+    details: form.habits.stress === 'very_high' ? 'مرتفع جداً' :
+             form.habits.stress === 'high' ? 'مرتفع' :
+             form.habits.stress === 'moderate' ? 'متوسط' : 'منخفض ✓'
+  })
+
+  // 8. Family History
+  const firstDeg = form.familyMembers.filter(m => m.degree === 'first' && m.disease && m.disease !== '')
+  const secondDeg = form.familyMembers.filter(m => m.degree === 'second' && m.disease && m.disease !== '')
+  const familyScore = Math.min(firstDeg.length * 7 + secondDeg.length * 3, 28)
+  breakdown.push({
+    category: 'التاريخ العائلي',
+    score: familyScore, maxScore: 28,
+    details: form.noFamilyHistory
+      ? 'لا يوجد تاريخ عائلي'
+      : `${firstDeg.length} درجة أولى، ${secondDeg.length} درجة ثانية`
+  })
+
+  const total = Math.min(breakdown.reduce((s, b) => s + b.score, 0), 100)
+  return { total, breakdown }
+}
+
+export function getRiskMeta(score: number): {
+  level: 'منخفض' | 'متوسط' | 'مرتفع'
+  color: string
+  bg: string
+  description: string
+} {
+  if (score >= 70) return {
+    level: 'مرتفع',
+    color: '#f87171', bg: '#2d0a0a',
+    description: 'ننصحك بزيارة الطبيب قريباً ومراجعة هذه المخاطر بشكل عاجل'
+  }
+  if (score >= 40) return {
+    level: 'متوسط',
+    color: '#fbbf24', bg: '#2d1a00',
+    description: 'توجد عوامل خطر تستحق الانتباه والمتابعة الدورية مع طبيبك'
+  }
+  return {
+    level: 'منخفض',
+    color: '#34d399', bg: '#052e16',
+    description: 'وضعك الصحي العام جيد — حافظ عليه بالفحوصات الدورية'
+  }
+}
+
+// ── Screenings Builder ───────────────────────────────────────
+export function buildScreenings(form: HealthFormData, bmi: number, score: number): Screening[] {
+  const list: Screening[] = []
+  const age = parseInt(form.age)
+  const gender = form.gender
+  const diseases = form.familyMembers.map(m => m.disease)
+  const firstDegDiseases = form.familyMembers.filter(m => m.degree === 'first').map(m => m.disease)
+
+  // ── Always recommended ─────────────────────────────
+  list.push({
+    name: 'قياس ضغط الدم',
+    nameEn: 'Blood Pressure Measurement',
+    freq: 'مرة كل سنة',
+    urgency: 'روتيني',
+    category: 'general',
+    guidelineSource: 'AHA / ESC Guidelines 2023',
+    explanation: 'ضغط الدم المرتفع غالباً لا يُسبب أعراضاً ويُسمى "القاتل الصامت". الكشف المبكر يمنع السكتات الدماغية ومضاعفات القلب.',
+    intervalReason: 'الفحص السنوي كافٍ للأشخاص بدون عوامل خطر إضافية.',
+    triggerReasons: ['توصية عامة لجميع البالغين فوق 18 سنة'],
+  })
+
+  list.push({
+    name: 'سكر الدم الصيامي',
+    nameEn: 'Fasting Blood Glucose',
+    freq: age > 45 || bmi >= 25 || diseases.includes('diabetes') ? 'كل سنة' : 'كل 3 سنوات',
+    urgency: (diseases.includes('diabetes') || firstDegDiseases.includes('diabetes') || bmi >= 25) ? 'مهم' : 'روتيني',
+    category: 'blood',
+    guidelineSource: 'ADA Standards of Care 2024',
+    explanation: 'مرض السكري النوع الثاني يتطور ببطء لسنوات قبل الأعراض. الكشف المبكر يمنع المضاعفات الخطيرة كأمراض الكلى والعيون والأعصاب.',
+    intervalReason: 'مع وجود عوامل خطر يُنصح بالفحص السنوي. بدون عوامل خطر كل 3 سنوات كافٍ.',
+    triggerReasons: [
+      ...(bmi >= 25 ? ['زيادة الوزن (BMI ≥ 25)'] : []),
+      ...(firstDegDiseases.includes('diabetes') ? ['تاريخ عائلي للسكري — درجة أولى'] : []),
+      ...(age > 45 ? ['العمر فوق 45 سنة'] : []),
+    ],
+  })
+
+  // ── Lipid Profile ─────────────────────────────────
+  if (bmi >= 25 || age > 35 || diseases.includes('heart_disease') || form.habits.smoking !== 'none') {
+    list.push({
+      name: 'دهون الدم والكوليسترول',
+      nameEn: 'Lipid Profile',
+      freq: 'كل سنة',
+      urgency: (diseases.includes('heart_disease') || form.habits.smoking === 'heavy') ? 'عاجل' : 'مهم',
+      category: 'blood',
+      guidelineSource: 'ESC/EAS Guidelines 2023',
+      explanation: 'ارتفاع الكوليسترول يزيد تراكم الترسبات في الشرايين مما يؤدي لنوبات قلبية وسكتات دماغية. لا أعراض حتى يحدث الانسداد.',
+      intervalReason: 'مع عوامل خطر متعددة، المراقبة السنوية تُمكّن من التدخل المبكر بالعلاج أو تغيير النظام الغذائي.',
+      triggerReasons: [
+        ...(bmi >= 25 ? ['زيادة الوزن'] : []),
+        ...(form.habits.smoking !== 'none' ? ['التدخين'] : []),
+        ...(diseases.includes('heart_disease') ? ['تاريخ عائلي لأمراض القلب'] : []),
+        ...(age > 35 ? ['العمر فوق 35 سنة'] : []),
+      ],
+    })
+  }
+
+  // ── CBC ───────────────────────────────────────────
+  list.push({
+    name: 'صورة الدم الكاملة (CBC)',
+    nameEn: 'Complete Blood Count',
+    freq: 'كل سنة إلى سنتين',
+    urgency: 'روتيني',
+    category: 'blood',
+    guidelineSource: 'WHO Preventive Care Guidelines',
+    explanation: 'يكشف فقر الدم، التهابات مخفية، مشاكل المناعة، وبعض أنواع سرطان الدم في مراحلها المبكرة.',
+    intervalReason: 'فحص شامل وغير مكلف يُعطي صورة واضحة عن الصحة العامة.',
+    triggerReasons: ['توصية وقائية عامة'],
+  })
+
+  // ── Thyroid ───────────────────────────────────────
+  if (gender === 'female' || diseases.includes('thyroid') || age > 35) {
+    list.push({
+      name: 'وظائف الغدة الدرقية (TSH)',
+      nameEn: 'Thyroid Function (TSH)',
+      freq: gender === 'female' ? 'كل 2-3 سنوات' : 'كل 5 سنوات',
+      urgency: diseases.includes('thyroid') ? 'مهم' : 'روتيني',
+      category: 'hormones',
+      guidelineSource: 'ATA Guidelines 2023',
+      explanation: 'اضطرابات الغدة الدرقية شائعة وتؤثر على الوزن والطاقة والمزاج والقلب. النساء أكثر عرضة بـ 5-8 مرات.',
+      intervalReason: 'النساء أكثر عرضة للإصابة خاصة بعد سن 35، لذا يُنصح بفحص أكثر تكراراً.',
+      triggerReasons: [
+        ...(gender === 'female' ? ['الجنس الأنثوي — عامل خطر مستقل'] : []),
+        ...(diseases.includes('thyroid') ? ['تاريخ عائلي لأمراض الغدة'] : []),
+      ],
+    })
+  }
+
+  // ── Kidney Function ───────────────────────────────
+  if (age > 40 || diseases.includes('kidney_disease') || diseases.includes('diabetes') || diseases.includes('hypertension')) {
+    list.push({
+      name: 'وظائف الكلى (Creatinine + eGFR)',
+      nameEn: 'Kidney Function Tests',
+      freq: 'كل سنة',
+      urgency: firstDegDiseases.includes('kidney_disease') ? 'مهم' : 'روتيني',
+      category: 'blood',
+      guidelineSource: 'KDIGO Guidelines 2024',
+      explanation: 'الفشل الكلوي يتطور ببطء دون أعراض. الكشف المبكر يُبطّئ التطور ويمنع الحاجة لغسيل الكلى.',
+      intervalReason: 'مع وجود عوامل خطر، المراقبة السنوية ضرورية لرصد أي تدهور.',
+      triggerReasons: [
+        ...(age > 40 ? ['العمر فوق 40'] : []),
+        ...(firstDegDiseases.includes('kidney_disease') ? ['تاريخ عائلي لأمراض الكلى'] : []),
+        ...(diseases.includes('diabetes') ? ['مرض السكري في العائلة'] : []),
+      ],
+    })
+  }
+
+  // ── Liver Function ────────────────────────────────
+  if (bmi >= 27 || form.habits.alcohol === 'yes') {
+    list.push({
+      name: 'وظائف الكبد (AST/ALT)',
+      nameEn: 'Liver Function Tests',
+      freq: 'كل سنة',
+      urgency: 'مهم',
+      category: 'blood',
+      guidelineSource: 'AASLD Guidelines 2023',
+      explanation: 'الكبد الدهني غير الكحولي (NAFLD) يصيب ثلث البالغين المصابين بزيادة الوزن ولا يُسبب أعراضاً في البداية.',
+      intervalReason: 'السمنة هي أكبر عامل خطر لتليف الكبد في العالم حالياً.',
+      triggerReasons: [
+        ...(bmi >= 27 ? [`BMI ${bmi} — زيادة في الوزن`] : []),
+      ],
+    })
+  }
+
+  // ── Vitamin D ─────────────────────────────────────
+  list.push({
+    name: 'فيتامين D',
+    nameEn: 'Vitamin D (25-OH)',
+    freq: 'كل سنة',
+    urgency: 'روتيني',
+    category: 'vitamins',
+    guidelineSource: 'Endocrine Society Guidelines',
+    explanation: 'أكثر من 50% من سكان المنطقة العربية يعانون من نقص فيتامين D رغم الشمس الوفيرة، بسبب البقاء الداخلي وتغطية الجلد.',
+    intervalReason: 'نقص فيتامين D مرتبط بضعف المناعة وهشاشة العظام وزيادة خطر الاكتئاب.',
+    triggerReasons: ['شيوع عالي في المنطقة العربية', 'تأثير مباشر على المناعة والعظام'],
+  })
+
+  // ── ECG ───────────────────────────────────────────
+  if (age > 40 || diseases.includes('heart_disease') || score >= 40 || form.habits.smoking !== 'none') {
+    list.push({
+      name: 'تخطيط القلب الكهربائي (ECG)',
+      nameEn: 'Electrocardiogram',
+      freq: 'كل سنتين',
+      urgency: (firstDegDiseases.includes('heart_disease') || score >= 60) ? 'مهم' : 'روتيني',
+      category: 'cardiology',
+      guidelineSource: 'ACC/AHA Guidelines 2023',
+      explanation: 'يكشف اضطرابات ضربات القلب والإجهاد على عضلة القلب قبل ظهور الأعراض. مريح، سريع، وغير مكلف.',
+      intervalReason: 'لأشخاص فوق 40 أو لديهم عوامل خطر، الفحص كل سنتين يُعطي صورة دورية عن صحة القلب.',
+      triggerReasons: [
+        ...(age > 40 ? ['العمر فوق 40 سنة'] : []),
+        ...(firstDegDiseases.includes('heart_disease') ? ['تاريخ عائلي لأمراض القلب'] : []),
+        ...(form.habits.smoking !== 'none' ? ['التدخين يضر عضلة القلب'] : []),
+      ],
+    })
+  }
+
+  // ── Lung (smokers) ────────────────────────────────
+  if (form.habits.smoking === 'heavy' || form.habits.smoking === 'moderate') {
+    list.push({
+      name: 'وظائف الرئة (Spirometry)',
+      nameEn: 'Pulmonary Function Test',
+      freq: 'سنوياً',
+      urgency: form.habits.smoking === 'heavy' ? 'عاجل' : 'مهم',
+      category: 'general',
+      guidelineSource: 'GOLD Guidelines 2024',
+      explanation: 'التدخين يتلف الرئتين تدريجياً. مرض الانسداد الرئوي المزمن (COPD) يتطور لسنوات قبل إحساسك بضيق التنفس.',
+      intervalReason: 'المدخنون الثقيلون يحتاجون مراقبة سنوية للكشف المبكر عن COPD أو ما قبل السرطان.',
+      triggerReasons: [
+        form.habits.smoking === 'heavy' ? 'تدخين ثقيل (أكثر من 20 سيجارة/يوم)' : 'تدخين متوسط',
+      ],
+    })
+
+    // CT Low-dose for heavy smokers over 50
+    if (age >= 50 && form.habits.smoking === 'heavy') {
+      list.push({
+        name: 'أشعة CT منخفضة الجرعة للرئة',
+        nameEn: 'Low-dose CT Lung Screening',
+        freq: 'سنوياً',
+        urgency: 'عاجل',
+        category: 'imaging',
+        guidelineSource: 'USPSTF Recommendations 2021',
+        explanation: 'الدراسات أثبتت أن هذا الفحص يخفّض وفيات سرطان الرئة بـ 20% للمدخنين الثقيلين فوق 50 سنة.',
+        intervalReason: 'الكشف المبكر عن سرطان الرئة في المرحلة الأولى يُضاعف فرصة الشفاء إلى أكثر من 90%.',
+        triggerReasons: ['مدخن ثقيل فوق سن 50 — فئة عالية الخطر'],
+      })
+    }
+  }
+
+  // ── Cancer Screenings ─────────────────────────────
+  // Colorectal
+  if (age >= 45 || firstDegDiseases.includes('colon_cancer')) {
+    list.push({
+      name: 'فحص سرطان القولون (Colonoscopy / FIT)',
+      nameEn: 'Colorectal Cancer Screening',
+      freq: firstDegDiseases.includes('colon_cancer') ? 'كل 5 سنوات' : 'كل 10 سنوات',
+      urgency: firstDegDiseases.includes('colon_cancer') ? 'مهم' : 'روتيني',
+      category: 'cancer',
+      guidelineSource: 'USPSTF / ACG Guidelines 2021',
+      explanation: 'سرطان القولون قابل للشفاء التام إذا كُشف مبكراً. الفحص يمكّن من إزالة الأورام الحميدة قبل تحوّلها لسرطان.',
+      intervalReason: `مع ${firstDegDiseases.includes('colon_cancer') ? 'وجود' : 'غياب'} تاريخ عائلي، الفحص ${firstDegDiseases.includes('colon_cancer') ? 'كل 5 سنوات' : 'كل 10 سنوات'} وفق الإرشادات.`,
+      triggerReasons: [
+        ...(age >= 45 ? ['العمر 45+ — توصية عامة'] : []),
+        ...(firstDegDiseases.includes('colon_cancer') ? ['تاريخ عائلي لسرطان القولون'] : []),
+      ],
+    })
+  }
+
+  // Breast Cancer
+  if (gender === 'female' && (age >= 40 || firstDegDiseases.includes('breast_cancer'))) {
+    list.push({
+      name: 'تصوير الثدي بالأشعة (Mammogram)',
+      nameEn: 'Mammography',
+      freq: firstDegDiseases.includes('breast_cancer') ? 'سنوياً من سن 30' : 'كل سنة من سن 40',
+      urgency: firstDegDiseases.includes('breast_cancer') ? 'عاجل' : 'مهم',
+      category: 'cancer',
+      guidelineSource: 'ACR / ACS Guidelines 2024',
+      explanation: 'سرطان الثدي أكثر أنواع السرطان شيوعاً لدى النساء. الكشف المبكر يرفع نسبة البقاء على قيد الحياة إلى أكثر من 95%.',
+      intervalReason: 'الفحص السنوي يُمكّن من رصد التغيرات بين عام وآخر.',
+      triggerReasons: [
+        ...(age >= 40 ? ['العمر 40+'] : []),
+        ...(firstDegDiseases.includes('breast_cancer') ? ['تاريخ عائلي لسرطان الثدي — ابدئي قبل 40'] : []),
+      ],
+    })
+  }
+
+  // Cervical Cancer
+  if (gender === 'female' && age >= 21) {
+    list.push({
+      name: 'مسحة عنق الرحم (Pap Smear)',
+      nameEn: 'Cervical Cancer Screening (Pap Smear)',
+      freq: age >= 30 ? 'كل 3-5 سنوات (Pap + HPV)' : 'كل 3 سنوات',
+      urgency: 'مهم',
+      category: 'cancer',
+      guidelineSource: 'ACOG Guidelines 2021',
+      explanation: 'سرطان عنق الرحم قابل للوقاية والعلاج الكامل إذا كُشف مبكراً. فيروس HPV السبب الرئيسي وهو قابل للرصد.',
+      intervalReason: 'فوق 30 سنة، الجمع بين Pap وHPV يُطيل فترة الفحص لـ 5 سنوات مع نفس الأمان.',
+      triggerReasons: ['توصية عامة لجميع النساء فوق 21 سنة'],
+    })
+  }
+
+  // Prostate
+  if (gender === 'male' && (age >= 50 || (age >= 40 && (firstDegDiseases.includes('colon_cancer') || firstDegDiseases.some(d => d?.toString().includes('cancer')))))) {
+    list.push({
+      name: 'فحص البروستاتا (PSA)',
+      nameEn: 'Prostate-Specific Antigen',
+      freq: 'كل سنة',
+      urgency: age >= 50 ? 'مهم' : 'روتيني',
+      category: 'cancer',
+      guidelineSource: 'AUA Guidelines 2023',
+      explanation: 'سرطان البروستاتا ثاني أكثر أنواع السرطان شيوعاً عند الرجال. الكشف المبكر يُحقق نسبة شفاء تقارب 100%.',
+      intervalReason: 'الفحص السنوي ابتداءً من سن 50 (أو 40 مع عوامل خطر) وفق الإرشادات الأمريكية.',
+      triggerReasons: [
+        ...(age >= 50 ? ['العمر 50+'] : ['تاريخ عائلي لسرطان']),
+      ],
+    })
+  }
+
+  // ── Bone Density ──────────────────────────────────
+  if ((gender === 'female' && age >= 45) || age >= 65) {
+    list.push({
+      name: 'قياس كثافة العظام (DEXA)',
+      nameEn: 'Bone Density Scan',
+      freq: 'كل 2-3 سنوات',
+      urgency: 'روتيني',
+      category: 'imaging',
+      guidelineSource: 'NOF Guidelines / WHO',
+      explanation: 'هشاشة العظام لا تُسبب أعراضاً حتى يحدث الكسر. النساء فوق 45 والرجال فوق 65 أكثر عرضة.',
+      intervalReason: 'الكشف المبكر يُمكّن من العلاج الوقائي قبل حدوث الكسور.',
+      triggerReasons: [
+        ...(gender === 'female' && age >= 45 ? ['النساء فوق 45 — خطر متزايد بعد انقطاع الطمث'] : []),
+        ...(age >= 65 ? ['العمر فوق 65'] : []),
+      ],
+    })
+  }
+
+  // ── Eye exam ──────────────────────────────────────
+  if (diseases.includes('diabetes') || age > 40) {
+    list.push({
+      name: 'فحص قاع العين',
+      nameEn: 'Fundoscopy / Eye Exam',
+      freq: 'كل سنة إلى سنتين',
+      urgency: diseases.includes('diabetes') ? 'مهم' : 'روتيني',
+      category: 'general',
+      guidelineSource: 'AAO Guidelines 2023',
+      explanation: 'الجلوكوما وتدهور شبكية العين من مضاعفات السكري وارتفاع الضغط. الكشف المبكر يحمي النظر.',
+      intervalReason: 'مع تاريخ عائلي للسكري، فحص العيون ضروري لرصد اعتلال الشبكية.',
+      triggerReasons: [
+        ...(diseases.includes('diabetes') ? ['خطر اعتلال شبكية العين السكري'] : []),
+        ...(age > 40 ? ['العمر فوق 40 — خطر الجلوكوما يزيد'] : []),
+      ],
+    })
+  }
+
+  return list
+}
+
+// ── Lifestyle Tips ───────────────────────────────────────────
+export function buildLifestyleTips(form: HealthFormData, bmi: number): string[] {
+  const tips: string[] = []
+
+  if (form.habits.sleep === 'very_low')
+    tips.push('النوم أقل من 5 ساعات يرفع خطر أمراض القلب والسكري بشكل ملموس — ضع هدفاً لـ 7 ساعات')
+  else if (form.habits.sleep === 'low')
+    tips.push('زد نومك لـ 7-8 ساعات — فقط ساعة إضافية تُحسّن المناعة وتخفّض الكورتيزول')
+
+  if (form.habits.exercise === 'none')
+    tips.push('ابدأ بـ 20 دقيقة مشي يومياً — هذا وحده يخفض خطر الوفاة المبكرة بنسبة 20-30%')
+  else if (form.habits.exercise === 'rarely')
+    tips.push('زد نشاطك لـ 150 دقيقة أسبوعياً وفق توصية WHO — يمكن تقسيمها على 5 أيام')
+
+  if (form.habits.diet === 'poor')
+    tips.push('ابدأ بتغيير واحد: احذف المشروبات السكرية — هذا التغيير وحده يخفض خطر السكري بـ 25%')
+
+  if (form.habits.stress === 'very_high')
+    tips.push('التوتر المزمن يُحدث التهاباً في الشرايين — 10 دقائق تنفس عميق يومياً تُخفّض الكورتيزول فعلياً')
+  else if (form.habits.stress === 'high')
+    tips.push('الضغط المستمر يؤثر على القلب والمناعة — مارس نشاطاً بدنياً أو تأمل بانتظام')
+
+  if (form.habits.smoking === 'heavy' || form.habits.smoking === 'moderate')
+    tips.push('الإقلاع عن التدخين هو أكبر قرار يمكنك اتخاذه لصحتك — الجسم يبدأ الشفاء خلال 20 دقيقة من آخر سيجارة')
+  else if (form.habits.smoking === 'light')
+    tips.push('لا توجد كمية آمنة من التدخين — حتى 5 سجائر يومياً ترفع خطر السكتة الدماغية بـ 40%')
+
+  if (bmi >= 30)
+    tips.push('خفض 5-10% من وزنك فقط يُحسّن ضغط الدم والسكر والكوليسترول بشكل ملحوظ')
+  else if (bmi >= 25)
+    tips.push('الوصول لـ BMI أقل من 25 يُخفّض خطر السكري النوع 2 بنسبة تصل لـ 58%')
+
+  if (form.habits.waterIntake === 'low')
+    tips.push('اشرب 2-2.5 لتر ماء يومياً — الجفاف الخفيف يقلل التركيز ويُجهد الكلى والقلب')
+
+  return tips
+}
+
+// ── Positives ────────────────────────────────────────────────
+export function buildPositives(form: HealthFormData, bmi: number): string[] {
+  const pos: string[] = []
+
+  if (form.habits.smoking === 'none')
+    pos.push('لا تدخن — هذا القرار وحده يُقلّل خطر أمراض القلب والسرطان والسكتة الدماغية بشكل جذري')
+  else if (form.habits.smoking === 'ex')
+    pos.push('إقلاعك عن التدخين قرار ممتاز — الجسم يستمر في الشفاء لسنوات بعد الإقلاع')
+
+  if (form.habits.exercise === 'frequent' || form.habits.exercise === 'daily')
+    pos.push('نشاطك البدني ممتاز — أنت في أفضل 20% من حيث عامل الخطر الأكثر تأثيراً')
+  else if (form.habits.exercise === 'moderate')
+    pos.push('نشاطك البدني جيد — استمر وحاول الوصول لـ 4-5 مرات أسبوعياً')
+
+  if (form.habits.sleep === 'good')
+    pos.push('نومك الكافي يدعم مناعتك وصحة قلبك ويُوازن الهرمونات — عامل وقائي مهم')
+
+  if (form.habits.diet === 'healthy')
+    pos.push('نظامك الغذائي الصحي يُقلّل الالتهابات الجسمية ويحمي من الأمراض المزمنة المتعددة')
+
+  if (form.habits.stress === 'low')
+    pos.push('مستوى التوتر المنخفض يحمي قلبك وجهازك المناعي ويُطيل العمر المتوقع')
+
+  if (bmi >= 18.5 && bmi < 25)
+    pos.push(`وزنك مثالي (BMI ${bmi}) — الحفاظ عليه من أفضل ما يمكنك فعله لصحتك على المدى البعيد`)
+
+  if (form.noFamilyHistory)
+    pos.push('غياب التاريخ المرضي العائلي يُقلّل خطرك الوراثي بشكل ملحوظ')
+
+  return pos
+}
+
+// ── Summary for Claude prompt ────────────────────────────────
+export function buildFamilySummary(form: HealthFormData): string {
+  if (form.noFamilyHistory) return 'لا يوجد تاريخ عائلي مرضي'
+  if (form.familyMembers.length === 0) return 'غير محدد'
+
+  const diseaseLabels: Record<string, string> = {
+    diabetes: 'السكري', hypertension: 'ضغط الدم', heart_disease: 'أمراض القلب',
+    stroke: 'السكتة الدماغية', colon_cancer: 'سرطان القولون',
+    breast_cancer: 'سرطان الثدي', lung_cancer: 'سرطان الرئة',
+    kidney_disease: 'أمراض الكلى', asthma: 'الربو',
+    obesity: 'السمنة', autoimmune: 'أمراض المناعة',
+    thyroid: 'الغدة الدرقية', mental_health: 'أمراض نفسية', other: 'أخرى',
+  }
+  const relLabels: Record<string, string> = {
+    father: 'الأب', mother: 'الأم', brother: 'أخ', sister: 'أخت',
+    son: 'ابن', daughter: 'بنت', grandfather_p: 'جد', grandmother_p: 'جدة',
+    grandfather_m: 'جد', grandmother_m: 'جدة',
+    uncle: 'عم/خال', aunt: 'عمة/خالة', cousin: 'ابن عم', other: 'أخرى',
+  }
+
+  return form.familyMembers
+    .filter(m => m.relative && m.disease)
+    .map(m => `${relLabels[m.relative] ?? m.relative}: ${diseaseLabels[m.disease] ?? m.disease}${m.age_at_diagnosis ? ` (${m.age_at_diagnosis} سنة)` : ''}`)
+    .join('، ')
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/lib/supabase/client.ts
+================================================================================
+
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+
+
+================================================================================
+FILE: wiqaya-fullstack/lib/supabase/server.ts
+================================================================================
+
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Ignore — called from Server Component
+          }
+        },
+      },
+    }
+  )
+}
+
